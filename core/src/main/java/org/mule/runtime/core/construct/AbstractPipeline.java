@@ -9,11 +9,9 @@ package org.mule.runtime.core.construct;
 import static java.lang.String.format;
 import static org.apache.commons.collections.CollectionUtils.selectRejected;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.startIfNeeded;
-import static org.mule.runtime.core.api.processor.ReactiveProcessor.ProcessingType.CPU_LITE;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_COMPLETE;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_END;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_START;
-import static org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory.SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE;
 import static org.mule.runtime.core.transaction.TransactionCoordination.isTransactionActive;
 import static org.mule.runtime.core.util.NotificationUtils.buildPathResolver;
 import static org.mule.runtime.core.util.concurrent.ThreadNameHelper.getPrefix;
@@ -39,6 +37,7 @@ import org.mule.runtime.core.api.processor.MessageProcessorChainBuilder;
 import org.mule.runtime.core.api.processor.MessageProcessorContainer;
 import org.mule.runtime.core.api.processor.MessageProcessorPathElement;
 import org.mule.runtime.core.api.processor.Processor;
+import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
@@ -46,6 +45,7 @@ import org.mule.runtime.core.api.source.ClusterizableMessageSource;
 import org.mule.runtime.core.api.source.CompositeMessageSource;
 import org.mule.runtime.core.api.source.MessageSource;
 import org.mule.runtime.core.api.source.NonBlockingMessageSource;
+import org.mule.runtime.core.api.source.PushSource;
 import org.mule.runtime.core.api.transport.LegacyInboundEndpoint;
 import org.mule.runtime.core.config.i18n.CoreMessages;
 import org.mule.runtime.core.connector.ConnectException;
@@ -67,10 +67,10 @@ import org.mule.runtime.core.util.rx.Exceptions.EventDroppedException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.commons.collections.Predicate;
 import org.reactivestreams.Publisher;
-
 import reactor.core.publisher.Mono;
 
 /**
@@ -92,6 +92,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   protected ProcessingStrategyFactory processingStrategyFactory;
   protected ProcessingStrategy processingStrategy;
   private boolean canProcessMessage = false;
+  protected Sink sink;
 
   private static final Predicate sourceCompatibleWithAsync = new Predicate() {
 
@@ -171,7 +172,6 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   }
 
   protected void configurePreProcessors(MessageProcessorChainBuilder builder) throws MuleException {
-    builder.chain(new ProcessingStrategyInterceptingMessageProcessor());
     builder.chain(new ProcessorStartCompleteProcessor());
   }
 
@@ -201,6 +201,19 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
     } else {
       this.messageSource = messageSource;
     }
+  }
+
+  protected Function<Publisher<Event>, Publisher<Event>> applyStream(Function<Publisher<Event>, Publisher<Event>> function) {
+    return publisher -> from(publisher)
+        .transform(function)
+        .onErrorResumeWith(MessagingException.class, getExceptionListener())
+        .doOnNext(response -> response.getContext().success(response))
+        // We no longer need error here, so supress error to avoid retry.
+        .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
+        .onErrorResumeWith(EventDroppedException.class, ede -> {
+          ede.getEvent().getContext().success();
+          return empty();
+        });
   }
 
   @Override
@@ -237,23 +250,16 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
 
         @Override
         public Event process(final Event event) throws MuleException {
-          if (isTransactionActive() || processingStrategy.isSynchronous()) {
+          if (isTransactionActive()) {
             return pipeline.process(event);
           } else {
             try {
-              return Mono.just(event)
-                  .transform(this)
-                  .otherwise(EventDroppedException.class, mde -> empty())
-                  .block();
+              sink.accept(event);
+              return Mono.from(event.getContext()).block();
             } catch (Exception e) {
               throw rxExceptionToMuleException(e);
             }
           }
-        }
-
-        @Override
-        public Publisher<Event> apply(Publisher<Event> publisher) {
-          return from(publisher).transform(pipeline);
         }
       });
     }
@@ -318,6 +324,10 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   protected void doStart() throws MuleException {
     super.doStart();
     startIfStartable(processingStrategy);
+    sink = processingStrategy.getSink(this, applyStream(pipeline));
+    if (messageSource instanceof PushSource) {
+      ((PushSource) messageSource).setSink(sink);
+    }
     startIfStartable(pipeline);
     startIfNeeded(processingStrategy);
     canProcessMessage = true;
@@ -358,9 +368,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
       }
       exceptionStrategyPathElement = exceptionStrategyPathElement.addChild(esPrefix);
       ((MessageProcessorContainer) exceptionListener).addMessageProcessorPathElements(exceptionStrategyPathElement);
-
     }
-
   }
 
   private String getExceptionStrategyGlobalName() {
@@ -400,6 +408,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   protected void doStop() throws MuleException {
     try {
       stopIfStoppable(messageSource);
+      sink.complete();
     } finally {
       canProcessMessage = false;
     }
@@ -443,31 +452,4 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
     }
   }
 
-  private class ProcessingStrategyInterceptingMessageProcessor extends AbstractInterceptingMessageProcessor
-      implements InternalMessageProcessor {
-
-    @Override
-    public Event process(Event event) throws MuleException {
-      if (processingStrategy != SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE) {
-        try {
-          return Mono.just(event).transform(this).block();
-        } catch (Throwable e) {
-          throw rxExceptionToMuleException(e);
-        }
-      } else {
-        return processNext(event);
-      }
-    }
-
-    @Override
-    public Publisher<Event> apply(Publisher<Event> publisher) {
-      return from(publisher).transform(processingStrategy.onPipeline(AbstractPipeline.this, next));
-    }
-
-    @Override
-    public ProcessingType getProcessingType() {
-      return CPU_LITE;
-    }
-
-  }
 }

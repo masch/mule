@@ -17,8 +17,10 @@ import org.mule.runtime.api.scheduler.Scheduler;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.construct.FlowConstruct;
+import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 
+import java.beans.ExceptionListener;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -52,7 +54,8 @@ public class LegacyDefaultFlowProcessingStrategyFactory extends LegacyAsynchrono
 
     @Override
     public Function<Publisher<Event>, Publisher<Event>> onPipeline(FlowConstruct flowConstruct,
-                                                                   Function<Publisher<Event>, Publisher<Event>> pipelineFunction) {
+                                                                   Function<Publisher<Event>, Publisher<Event>> pipelineFunction,
+                                                                   MessagingExceptionHandler messagingExceptionHandler) {
       return publisher -> from(publisher).concatMap(request -> {
         if (canProcessAsync(request)) {
           return just(request).transform(super.onPipeline(flowConstruct, pipelineFunction));

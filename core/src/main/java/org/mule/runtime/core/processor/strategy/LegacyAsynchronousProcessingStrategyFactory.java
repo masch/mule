@@ -85,7 +85,7 @@ public class LegacyAsynchronousProcessingStrategyFactory implements ProcessingSt
       // Conserve existing 3.x async processing strategy behaviuor:
       // i) The request event is echoed rather than the the result of async processing returned
       // ii) Any exceptions that occur due to async processing are not propagated upwards
-      return publisher -> from(publisher)
+      return super.onPipeline(flowConstruct, publisher -> from(publisher)
           .doOnNext(assertCanProcess())
           .doOnNext(fireAsyncScheduledNotification(flowConstruct))
           .doOnNext(request -> just(request)
@@ -98,7 +98,7 @@ public class LegacyAsynchronousProcessingStrategyFactory implements ProcessingSt
               .onErrorResumeWith(EventDroppedException.class, mde -> empty())
               .doOnError(UNEXPECTED_EXCEPTION_PREDICATE, exception -> LOGGER.error("Unhandled exception in async processing.",
                                                                                    exception))
-              .subscribe());
+              .subscribe()));
     }
 
     protected Consumer<Event> assertCanProcess() {

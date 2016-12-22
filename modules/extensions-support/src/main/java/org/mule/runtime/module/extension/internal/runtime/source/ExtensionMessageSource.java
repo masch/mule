@@ -25,11 +25,13 @@ import org.mule.runtime.api.scheduler.Scheduler;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.processor.Processor;
+import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.retry.RetryCallback;
 import org.mule.runtime.core.api.retry.RetryContext;
 import org.mule.runtime.core.api.retry.RetryPolicyTemplate;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
 import org.mule.runtime.core.api.source.MessageSource;
+import org.mule.runtime.core.api.source.PushSource;
 import org.mule.runtime.core.api.transaction.TransactionConfig;
 import org.mule.runtime.core.exception.ErrorTypeLocator;
 import org.mule.runtime.core.execution.ExceptionCallback;
@@ -47,6 +49,7 @@ import org.mule.runtime.module.extension.internal.runtime.operation.IllegalOpera
 import org.mule.runtime.module.extension.internal.runtime.operation.IllegalSourceException;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
@@ -58,7 +61,7 @@ import org.slf4j.Logger;
  *
  * @since 4.0
  */
-public class ExtensionMessageSource extends ExtensionComponent implements MessageSource, ExceptionCallback {
+public class ExtensionMessageSource extends ExtensionComponent implements PushSource, ExceptionCallback {
 
   private static final Logger LOGGER = getLogger(ExtensionMessageSource.class);
 
@@ -73,6 +76,7 @@ public class ExtensionMessageSource extends ExtensionComponent implements Messag
   private final RetryPolicyTemplate retryPolicyTemplate;
   private final ExceptionEnricherManager exceptionEnricherManager;
   private Processor messageProcessor;
+  private Sink sink;
 
   private SourceAdapter sourceAdapter;
   private Scheduler retryScheduler;
@@ -125,6 +129,7 @@ public class ExtensionMessageSource extends ExtensionComponent implements Messag
         .setProcessingManager(messageProcessingManager)
         .setProcessContextSupplier(this::createProcessingContext)
         .setCompletionHandlerFactory(completionHandlerFactory)
+        .setSink(sink)
         .build();
   }
 
@@ -262,6 +267,11 @@ public class ExtensionMessageSource extends ExtensionComponent implements Messag
     };
   }
 
+  @Override
+  public void setSink(Sink sink) {
+    this.sink = sink;
+  }
+
   private class SourceRetryCallback implements RetryCallback {
 
     @Override
@@ -297,7 +307,6 @@ public class ExtensionMessageSource extends ExtensionComponent implements Messag
   public void setListener(Processor listener) {
     messageProcessor = listener;
   }
-
 
   /**
    * Validates if the current source is valid for the set configuration. In case that the validation fails, the method will throw

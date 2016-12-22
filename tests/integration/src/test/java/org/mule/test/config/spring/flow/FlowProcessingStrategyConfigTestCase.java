@@ -14,6 +14,7 @@ import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 import org.mule.runtime.core.construct.Flow;
+import org.mule.runtime.core.processor.strategy.AbstractProcessingStrategy;
 import org.mule.runtime.core.processor.strategy.DefaultFlowProcessingStrategyFactory;
 import org.mule.runtime.core.processor.strategy.LegacyAsynchronousProcessingStrategyFactory;
 import org.mule.runtime.core.processor.strategy.LegacyNonBlockingProcessingStrategyFactory;
@@ -74,7 +75,7 @@ public class FlowProcessingStrategyConfigTestCase extends AbstractIntegrationTes
     return flow.getProcessingStrategyFactory();
   }
 
-  public static class CustomProcessingStrategyFactory implements ProcessingStrategy, ProcessingStrategyFactory {
+  public static class CustomProcessingStrategyFactory extends AbstractProcessingStrategy implements ProcessingStrategyFactory {
 
     String foo;
 

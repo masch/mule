@@ -78,10 +78,8 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
       }
     } else {
       try {
-        return Mono.just(event)
-            .transform(this)
-            .otherwise(EventDroppedException.class, mde -> empty())
-            .block();
+        sink.accept(createMuleEventForCurrentFlow(event, event.getReplyToDestination(), event.getReplyToHandler()));
+        return Mono.from(event.getContext()).map(response -> createReturnEventForParentFlowConstruct(response, event)).block();
       } catch (Exception e) {
         throw rxExceptionToMuleException(e);
       }
@@ -96,7 +94,7 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
     } else {
       return from(publisher).concatMap(event -> just(event)
           .map(request -> createMuleEventForCurrentFlow(request, request.getReplyToDestination(), request.getReplyToHandler()))
-          .transform(pipeline)
+          .transform(processingStrategy.onPipeline(this, pipeline))
           .onErrorResumeWith(MessagingException.class, getExceptionListener())
           .doOnError(UNEXPECTED_EXCEPTION_PREDICATE,
                      throwable -> LOGGER.error("Unhandled exception in async processing " + throwable))

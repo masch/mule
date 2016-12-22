@@ -21,6 +21,7 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
+import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 
@@ -28,7 +29,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
+import reactor.core.Cancellation;
+import reactor.core.publisher.BlockingSink;
+import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.WorkQueueProcessor;
 
 /**
  * Creates {@link ReactorProcessingStrategy} instances. This processing strategy demultiplexes incoming messages to
@@ -64,6 +70,14 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
       this.cpuLightSchedulerSupplier = cpuLightSchedulerSupplier;
     }
 
+    public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
+      TopicProcessor<Event> processor = TopicProcessor.share(cpuLightScheduler, false);
+      Cancellation cancellation = processor.transform(function).retry().subscribe();
+      BlockingSink blockingSink = processor.connectSink();
+      return new ReactorSink(blockingSink, flowConstruct, cancellation);
+    }
+
+
     @Override
     public void start() throws MuleException {
       this.cpuLightScheduler = cpuLightSchedulerSupplier.get();
@@ -82,7 +96,6 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
                                                                    MessagingExceptionHandler messagingExceptionHandler) {
       return publisher -> from(publisher)
           .doOnNext(assertCanProcess())
-          .publishOn(fromExecutorService(getExecutorService(cpuLightScheduler)))
           .transform(pipelineFunction);
     }
 

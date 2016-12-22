@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public abstract class AbstractSchedulingProcessingStrategy implements ProcessingStrategy, Startable, Stoppable {
+public abstract class AbstractSchedulingProcessingStrategy extends AbstractProcessingStrategy implements Startable, Stoppable {
 
   public static final String TRANSACTIONAL_ERROR_MESSAGE = "Unable to process a transactional flow asynchronously";
 

@@ -7,10 +7,12 @@
 package org.mule.runtime.module.extension.internal.runtime.source;
 
 import static org.mule.runtime.module.extension.internal.util.MuleExtensionUtils.toMessage;
+
 import org.mule.runtime.api.message.Attributes;
 import org.mule.runtime.api.util.Preconditions;
 import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.processor.Processor;
+import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.execution.ExceptionCallback;
 import org.mule.runtime.core.execution.MessageProcessContext;
 import org.mule.runtime.core.execution.MessageProcessingManager;
@@ -21,8 +23,7 @@ import org.mule.runtime.extension.api.runtime.source.SourceCallbackContext;
 import java.util.function.Supplier;
 
 /**
- * Default implementation of {@link SourceCallback}.
- * Instances are to be created through the {@link #builder()} method.
+ * Default implementation of {@link SourceCallback}. Instances are to be created through the {@link #builder()} method.
  *
  * @param <T> the generic type of the output values of the generated results
  * @param <A> the generic type of the attributes of the generated results
@@ -44,6 +45,11 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
 
     public Builder<T, A> setListener(Processor listener) {
       product.listener = listener;
+      return this;
+    }
+
+    public Builder<T, A> setSink(Sink sink) {
+      product.sink = sink;
       return this;
     }
 
@@ -73,13 +79,12 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
     }
 
     public SourceCallback<T, A> build() {
-      checkArgument(product.listener, "listener");
+      checkArgument(product.sink, "sink");
       checkArgument(product.flowConstruct, "flowConstruct");
       checkArgument(product.exceptionCallback, "exceptionCallback");
       checkArgument(product.messageProcessingManager, "messageProcessingManager");
       checkArgument(product.processContextSupplier, "processContextSupplier");
       checkArgument(product.completionHandlerFactory, "completionHandlerSupplier");
-
       return product;
     }
 
@@ -102,6 +107,7 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
   private MessageProcessingManager messageProcessingManager;
   private Supplier<MessageProcessContext> processContextSupplier;
   private SourceCompletionHandlerFactory completionHandlerFactory;
+  private Sink sink;
 
   private DefaultSourceCallback() {}
 
@@ -124,7 +130,7 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
                                                                              listener,
                                                                              completionHandlerFactory
                                                                                  .createCompletionHandler(context),
-                                                                             messageProcessContext),
+                                                                             messageProcessContext, sink),
                                             messageProcessContext);
   }
 
@@ -143,4 +149,5 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
   public SourceCallbackContext createContext() {
     return new DefaultSourceCallbackContext(this);
   }
+
 }
