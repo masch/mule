@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.util.function.Consumer;
 
 /**
- * Used to dispatch {@link Event}'s asynchronsly for processing. The result of asynchronous processing can be obtained by
+ * Used to dispatch {@link Event}'s asynchronously for processing. The result of asynchronous processing can be obtained by
  * subscribing to the {@link Event}'s {@link EventContext}.
  *
  * @since 4.0
