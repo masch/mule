@@ -6,14 +6,9 @@
  */
 package org.mule.runtime.core.processor.strategy;
 
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static reactor.core.publisher.BlockingSink.*;
-import static reactor.core.publisher.Flux.from;
 import org.mule.runtime.api.lifecycle.Disposable;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.construct.FlowConstruct;
-import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
-import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.exception.MessagingException;
@@ -28,11 +23,9 @@ import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.BlockingSink.Emission;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.TopicProcessor;
-import reactor.core.publisher.WorkQueueProcessor;
 
 /**
- * Abstract base {@link ProcessingStrategy} implementing a
+ * Abstract base {@link ProcessingStrategy} that creates a {@link Sink} that serializes events.
  */
 public abstract class AbstractProcessingStrategy implements ProcessingStrategy {
 
