@@ -6,14 +6,17 @@
  */
 package org.mule.runtime.core.api.source;
 
+import org.mule.runtime.core.api.Event;
+import org.mule.runtime.core.api.EventContext;
+import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.processor.Sink;
 
 import java.util.function.Supplier;
 
 /**
- * Message source interface that instead of providing a {@link org.mule.runtime.core.api.processor.Processor} listener to sources,
- * provides a {@link Sink} that allows {@link org.mule.runtime.core.api.Event}'s to be dispatched asynchronously. Sources can then
- * recieve completion signals by subscribing to the {@link org.mule.runtime.core.api.EventContext}
+ * Message source interface that instead of providing a {@link Processor} listener to sources, provides a {@link Sink} that allows
+ * {@link Event}'s to be dispatched asynchronously. Sources can then recieve completion signals by subscribing to the
+ * {@link EventContext}
  *
  * // TODO MULE-11250 Migrate MessageSource to PushSource approach in transports and tests
  *
@@ -21,6 +24,10 @@ import java.util.function.Supplier;
  */
 public interface PushSource extends MessageSource {
 
+  /**
+   * Sets the {@link Sink} to be used by the source to dispatch {@link Event}'s for asynchronous processing.
+   * @param sink the sink instance.
+   */
   void setSink(Sink sink);
 
 }

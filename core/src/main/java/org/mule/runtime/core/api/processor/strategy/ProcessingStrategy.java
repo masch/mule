@@ -10,6 +10,7 @@ import static reactor.core.publisher.Flux.from;
 
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.construct.FlowConstruct;
+import org.mule.runtime.core.api.construct.Pipeline;
 import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.processor.Sink;
@@ -62,6 +63,14 @@ public interface ProcessingStrategy {
     return publisher -> from(publisher).transform(processorFunction);
   }
 
+  /**
+   * Creates instances of {@link Sink} to be used for emitting {@link Event}'s to be processed. Each {@link Sink} should be use
+   * independent streams that implement the {@link Pipeline}.
+   *
+   * @param flowConstruct pipeline instance.
+   * @param function function representing the
+   * @return new sink instance
+   */
   Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function);
 
   /**
@@ -70,6 +79,5 @@ public interface ProcessingStrategy {
   default boolean isSynchronous() {
     return false;
   }
-
 
 }

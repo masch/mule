@@ -7,7 +7,9 @@
 package org.mule.runtime.core.processor.strategy;
 
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static reactor.core.publisher.BlockingSink.*;
 import static reactor.core.publisher.Flux.from;
+import org.mule.runtime.api.lifecycle.Disposable;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
@@ -24,23 +26,25 @@ import org.reactivestreams.Publisher;
 import reactor.core.Cancellation;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.BlockingSink.Emission;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 
 /**
- * Determines how a list of message processors should processed.
+ * Abstract base {@link ProcessingStrategy} implementing a
  */
 public abstract class AbstractProcessingStrategy implements ProcessingStrategy {
 
   public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
-    TopicProcessor<Event> processor = TopicProcessor.share(false);
+    FluxProcessor<Event, Event> processor = EmitterProcessor.<Event>create().serialize();
     Cancellation cancellation = processor.transform(function).retry().subscribe();
     BlockingSink blockingSink = processor.connectSink();
 
     return new ReactorSink(blockingSink, flowConstruct, cancellation);
   }
 
-  class ReactorSink implements Sink {
+  class ReactorSink implements Sink, Disposable {
 
     private final BlockingSink blockingSink;
     private final FlowConstruct flowConstruct;
@@ -54,9 +58,7 @@ public abstract class AbstractProcessingStrategy implements ProcessingStrategy {
 
     @Override
     public void accept(Event event) {
-      while (blockingSink.emit(event) != Emission.OK) {
-        parkNanos(1L);
-      }
+      blockingSink.accept(event);
     }
 
     @Override
@@ -72,11 +74,11 @@ public abstract class AbstractProcessingStrategy implements ProcessingStrategy {
 
     @Override
     public boolean emit(Event event) {
-      return blockingSink.emit(event) == BlockingSink.Emission.OK;
+      return blockingSink.emit(event) == Emission.OK;
     }
 
     @Override
-    public void complete() {
+    public void dispose() {
       blockingSink.complete();
       cancellation.dispose();
     }

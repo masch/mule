@@ -77,8 +77,8 @@ public class ModuleFlowProcessingPhase
           getErrorConsumer(messageSource, template.getFailedExecutionResponseParametersFunction(),
                            messageProcessContext, template, phaseResultNotifier);
 
+      // TODO MULE-11167 Policies should be non blocking
       if (System.getProperty("enableSourcePolicies") == null) {
-
         just(template.getMessage())
             .map(Exceptions.checkedFunction(message -> Event
                 .builder(create(messageProcessContext.getFlowConstruct(), sourceIdentifier.getNamespace()))
@@ -92,8 +92,6 @@ public class ModuleFlowProcessingPhase
                                             template))
             .doOnError(MessagingException.class, errorConsumer)
             .subscribe();
-
-
       } else {
         final Event templateEvent =
             Event.builder(create(messageProcessContext.getFlowConstruct(), sourceIdentifier.getNamespace()))

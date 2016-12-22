@@ -203,17 +203,17 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
     }
   }
 
-  protected Function<Publisher<Event>, Publisher<Event>> applyStream(Function<Publisher<Event>, Publisher<Event>> function) {
+  protected Function<Publisher<Event>, Publisher<Event>> transformStream(Function<Publisher<Event>, Publisher<Event>> function) {
     return publisher -> from(publisher)
-        .transform(function)
-        .onErrorResumeWith(MessagingException.class, getExceptionListener())
-        .doOnNext(response -> response.getContext().success(response))
-        // We no longer need error here, so supress error to avoid retry.
-        .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
-        .onErrorResumeWith(EventDroppedException.class, ede -> {
-          ede.getEvent().getContext().success();
-          return empty();
-        });
+        .transform(processingStrategy.onPipeline(this, stream -> from(stream)
+            .transform(function)
+            .onErrorResumeWith(MessagingException.class, getExceptionListener())
+            .doOnNext(response -> response.getContext().success(response))
+            .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
+            .onErrorResumeWith(EventDroppedException.class, ede -> {
+              ede.getEvent().getContext().success();
+              return empty();
+            })));
   }
 
   @Override
@@ -324,7 +324,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   protected void doStart() throws MuleException {
     super.doStart();
     startIfStartable(processingStrategy);
-    sink = processingStrategy.getSink(this, applyStream(pipeline));
+    sink = processingStrategy.getSink(this, transformStream(pipeline));
     if (messageSource instanceof PushSource) {
       ((PushSource) messageSource).setSink(sink);
     }
@@ -408,7 +408,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
   protected void doStop() throws MuleException {
     try {
       stopIfStoppable(messageSource);
-      sink.complete();
+      disposeIfDisposable(sink);
     } finally {
       canProcessMessage = false;
     }
