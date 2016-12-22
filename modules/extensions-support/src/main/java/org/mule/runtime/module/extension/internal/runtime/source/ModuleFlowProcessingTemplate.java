@@ -61,15 +61,13 @@ final class ModuleFlowProcessingTemplate implements ModuleFlowProcessingPhaseTem
 
   @Override
   public Event routeEvent(Event muleEvent) throws MuleException {
-    try {
-      return Mono.from(dispatchEvent(muleEvent)).block();
-    } catch (Exception exception) {
-      throw rxExceptionToMuleException(exception);
-    }
+    // TODO MULE-11250 Migrate MessageSource to PushSource approach in transports and tests
+    return messageProcessor.process(muleEvent);
   }
 
   @Override
   public Publisher<Event> dispatchEvent(Event muleEvent) {
+    // TODO MULE-11252 Migrate MessageSources to use event submission instead of blocking accept
     sink.accept(muleEvent);
     return muleEvent.getContext();
   }
