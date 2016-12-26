@@ -49,9 +49,6 @@ public class MonoProcesingStrategyFactory implements ProcessingStrategyFactory {
           Mono.just(event).transform(function).subscribe();
           return true;
         }
-
-        @Override
-        public void complete() {}
       };
     }
   }
