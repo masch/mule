@@ -8,6 +8,7 @@ package org.mule.extension.oauth2.internal.clientcredentials;
 
 import static java.lang.String.format;
 import static org.mule.extension.http.api.HttpHeaders.Names.AUTHORIZATION;
+import static org.mule.extension.http.internal.HttpConnectorConstants.TLS_CONFIGURATION;
 import static org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID;
 import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
@@ -23,22 +24,47 @@ import org.mule.runtime.api.lifecycle.Startable;
 import org.mule.runtime.api.lifecycle.Stoppable;
 import org.mule.runtime.api.tls.TlsContextFactory;
 import org.mule.runtime.core.api.Event;
-import org.mule.runtime.core.api.MuleContext;
+import org.mule.runtime.extension.api.annotation.param.Optional;
+import org.mule.runtime.extension.api.annotation.param.Parameter;
+import org.mule.runtime.extension.api.annotation.param.ParameterGroup;
+import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
+import org.mule.runtime.extension.api.annotation.param.display.Placement;
 import org.mule.service.http.api.domain.message.request.HttpRequestBuilder;
 
-import javax.inject.Inject;
+import java.util.function.Function;
 
 /**
  * Authorization element for client credentials oauth grant type
  */
 public class ClientCredentialsGrantType extends AbstractGrantType implements Initialisable, Startable, Stoppable {
 
+  /**
+   * Application identifier as defined in the oauth authentication server.
+   */
+  @Parameter
   private String clientId;
+
+  /**
+   * Application secret as defined in the oauth authentication server.
+   */
+  @Parameter
   private String clientSecret;
+
+  /**
+   * This element configures an automatic flow created by mule that listens in the configured url by the redirectUrl attribute and
+   * process the request to retrieve an access token from the oauth authentication server.
+   */
+  @Parameter
+  @ParameterGroup("Token Request")
   private ClientCredentialsTokenRequestHandler tokenRequestHandler;
-  @Inject
-  private MuleContext muleContext;
-  private TokenManagerConfig tokenManager;
+
+  /**
+   * References a TLS config that will be used to receive incoming HTTP request and do HTTP request during the OAuth dance.
+   */
+  @Parameter
+  @Optional
+  @DisplayName(TLS_CONFIGURATION)
+  @Placement(tab = TLS_CONFIGURATION)
   private TlsContextFactory tlsContextFactory;
 
   public void setClientId(final String clientId) {
@@ -96,7 +122,14 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
     tokenRequestHandler.initialise();
   }
 
-  public String getRefreshTokenWhen() {
+  // @Override
+  // public void setMuleContext(final MuleContext context) {
+  // this.muleContext = context;
+  // tokenRequestHandler.setMuleContext(context);
+  // }
+
+  @Override
+  public Function<Event, String> getRefreshTokenWhen() {
     return tokenRequestHandler.getRefreshTokenWhen();
   }
 
@@ -117,13 +150,7 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
 
   @Override
   public boolean shouldRetry(final Event firstAttemptResponseEvent) {
-    final Object value =
-        muleContext.getExpressionManager().evaluate(getRefreshTokenWhen(), firstAttemptResponseEvent).getValue();
-    if (!(value instanceof Boolean)) {
-      throw new MuleRuntimeException(createStaticMessage("Expression %s should return a boolean but return %s",
-                                                         getRefreshTokenWhen(), value));
-    }
-    final Boolean shouldRetryRequest = (Boolean) value;
+    final Boolean shouldRetryRequest = evaluateShouldRetry(firstAttemptResponseEvent);
     if (shouldRetryRequest) {
       try {
         refreshAccessToken();

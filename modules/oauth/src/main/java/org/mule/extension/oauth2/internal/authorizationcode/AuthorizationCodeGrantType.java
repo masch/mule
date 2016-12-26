@@ -6,13 +6,12 @@
  */
 package org.mule.extension.oauth2.internal.authorizationcode;
 
+import org.mule.extension.http.internal.listener.server.HttpListenerConfig;
 import org.mule.extension.oauth2.internal.ApplicationCredentials;
 import org.mule.extension.oauth2.internal.authorizationcode.state.ConfigOAuthContext;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.tls.TlsContextFactory;
 import org.mule.runtime.core.api.Event;
-import org.mule.runtime.core.util.AttributeEvaluator;
-import org.mule.runtime.module.http.api.listener.HttpListenerConfig;
 import org.mule.service.http.api.server.HttpServer;
 
 /**
@@ -41,24 +40,18 @@ public interface AuthorizationCodeGrantType extends ApplicationCredentials {
   String getExternalCallbackUrl();
 
   /**
-   * @return expression to determine if a call to the resource secured with oauth failed because the access token has expired or
-   *         was revoked.
-   */
-  String getRefreshTokenWhen();
-
-  /**
    * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
    *         to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expression
    *         is used during the local authorization url call to determine the resource owner id.
    */
-  AttributeEvaluator getLocalAuthorizationUrlResourceOwnerIdEvaluator();
+  String getLocalAuthorizationUrlResourceOwnerId();
 
   /**
    * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
    *         to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expressions
    *         is used during http:request execution to determine the resource owner id.
    */
-  AttributeEvaluator getResourceOwnerIdEvaluator();
+  String getResourceOwnerId();
 
   /**
    * Does a refresh token for a particular oauth context id.

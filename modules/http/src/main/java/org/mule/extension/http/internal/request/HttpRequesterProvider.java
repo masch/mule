@@ -17,6 +17,7 @@ import static org.mule.runtime.extension.api.annotation.param.ParameterGroup.CON
 import static org.mule.runtime.extension.api.annotation.param.display.Placement.SECURITY_TAB;
 import static org.mule.runtime.module.http.api.HttpConstants.Protocols.HTTP;
 import static org.mule.runtime.module.http.api.HttpConstants.Protocols.HTTPS;
+
 import org.mule.extension.http.api.request.authentication.HttpAuthentication;
 import org.mule.extension.http.api.request.client.UriParameters;
 import org.mule.extension.http.internal.request.client.DefaultUriParameters;
@@ -46,7 +47,6 @@ import org.mule.service.http.api.HttpService;
 import org.mule.service.http.api.client.HttpClient;
 import org.mule.service.http.api.client.HttpClientConfiguration;
 import org.mule.service.http.api.client.proxy.ProxyConfig;
-import org.mule.service.http.api.tcp.TcpClientSocketPropertiesBuilder;
 
 import java.util.function.Function;
 
@@ -135,7 +135,7 @@ public class HttpRequesterProvider implements CachedConnectionProvider<HttpExten
       initialiseIfNeeded(tlsContext);
     }
     if (authentication != null) {
-      initialiseIfNeeded(authentication);
+      initialiseIfNeeded(authentication, muleContext);
     }
 
     verifyConnectionsParameters();

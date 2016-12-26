@@ -49,6 +49,17 @@ public class AuthorizationCodeAuthorizationFailureTestCase extends AbstractAutho
     return "authorization-code/authorization-code-failure-scenarios-config.xml";
   }
 
+  @Override
+  protected void doSetUp() throws Exception {
+    super.doSetUp();
+
+    try {
+      flowRunner("initFlow").run();
+    } catch (Exception e) {
+      // ignore
+    }
+  }
+
   @Test
   public void urlRedirectHandlerDoNotRetrieveAuthorizationCode() throws Exception {
     Response response = Get(localCallbackUrl.getValue()).connectTimeout(REQUEST_TIMEOUT).socketTimeout(REQUEST_TIMEOUT).execute();

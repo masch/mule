@@ -35,4 +35,8 @@
         <test:assert expression="#[message.attributes.queryParams['authorizationStatus'] == System.getProperty('expectedStatusCode')]" />
     </flow>
 
+    <flow name="initFlow">
+        <httpn:request config-ref="requestConfig" host="localhost" path="/init"/>
+    </flow>
+
 </mule>
