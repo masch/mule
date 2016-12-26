@@ -26,6 +26,7 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
 import org.mule.runtime.core.util.AttributeEvaluator;
+import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.module.http.api.listener.HttpListenerConfig;
 import org.mule.service.http.api.HttpService;
 import org.mule.service.http.api.domain.message.request.HttpRequestBuilder;
@@ -49,7 +50,13 @@ import org.slf4j.LoggerFactory;
  * oauth login. - If the token-request is defined then it will create a flow for listening in the redirect uri so we can get the
  * authentication code and retrieve the access token
  */
+<<<<<<< Upstream, based on origin/mule-4.x
 public class DefaultAuthorizationCodeGrantType extends AbstractGrantType implements Lifecycle, AuthorizationCodeGrantType {
+=======
+@Alias("authorization-code-grant-type")
+public class DefaultAuthorizationCodeGrantType extends AbstractGrantType
+    implements Initialisable, AuthorizationCodeGrantType, Startable, Stoppable, MuleContextAware {
+>>>>>>> 3a5ba3e starting migration
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultAuthorizationCodeGrantType.class);
 

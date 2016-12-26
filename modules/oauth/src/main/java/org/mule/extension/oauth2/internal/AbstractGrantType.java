@@ -6,7 +6,7 @@
  */
 package org.mule.extension.oauth2.internal;
 
-import org.mule.runtime.module.http.api.HttpAuthentication;
+import org.mule.extension.http.api.request.authentication.HttpAuthentication;
 
 /**
  * Common interface for all grant types must extend this interface.
