@@ -76,6 +76,7 @@ final class ConfigurationSchemaDelegate {
         }
       });
 
+      builder.addInfrastructureParameters(configurationModel, sequence);
       configurationModel.getParameterGroupModels().forEach(group -> {
         List<TopLevelElement> parameters = builder.registerParameters(config, group.getParameterModels());
         builder.addParameterGroupsToSequence(parameters, sequence);

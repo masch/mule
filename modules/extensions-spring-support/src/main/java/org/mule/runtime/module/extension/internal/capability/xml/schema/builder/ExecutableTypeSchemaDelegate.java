@@ -100,7 +100,7 @@ abstract class ExecutableTypeSchemaDelegate {
         String maxOccurs = parameterType instanceof ArrayType ? UNBOUNDED : MAX_ONE;
         childElements.add(generateNestedProcessorElement(paramDsl, parameter, maxOccurs));
       } else {
-        this.builder.declareAsParameter(parameterType, complexContentExtension, parameter, paramDsl, childElements);
+        builder.declareAsParameter(parameterType, complexContentExtension, parameter, paramDsl, childElements);
       }
     });
 
