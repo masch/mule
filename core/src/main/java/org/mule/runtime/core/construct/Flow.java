@@ -8,6 +8,7 @@ package org.mule.runtime.core.construct;
 
 import static org.mule.runtime.core.api.Event.setCurrentEvent;
 import static org.mule.runtime.core.execution.ErrorHandlingExecutionTemplate.createErrorHandlingExecutionTemplate;
+import static org.mule.runtime.core.processor.strategy.LegacySynchronousProcessingStrategyFactory.*;
 import static org.mule.runtime.core.transaction.TransactionCoordination.isTransactionActive;
 import static org.mule.runtime.core.util.rx.Exceptions.UNEXPECTED_EXCEPTION_PREDICATE;
 import static org.mule.runtime.core.util.rx.Exceptions.rxExceptionToMuleException;
@@ -34,6 +35,7 @@ import org.mule.runtime.core.exception.MessagingException;
 import org.mule.runtime.core.interceptor.ProcessingTimeInterceptor;
 import org.mule.runtime.core.management.stats.FlowConstructStatistics;
 import org.mule.runtime.core.processor.strategy.DefaultFlowProcessingStrategyFactory;
+import org.mule.runtime.core.processor.strategy.LegacySynchronousProcessingStrategyFactory;
 import org.mule.runtime.core.routing.requestreply.AsyncReplyToPropertyRequestReplyReplier;
 import org.mule.runtime.core.util.rx.Exceptions.EventDroppedException;
 
@@ -61,7 +63,7 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
 
   @Override
   public Event process(final Event event) throws MuleException {
-    if (isTransactionActive() || processingStrategy.isSynchronous()) {
+    if (isTransactionActive() || processingStrategy == LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE) {
       // TODO MULE-11023	Migrate transaction execution template mechanism to use non-blocking API
       final Event newEvent = createMuleEventForCurrentFlow(event, event.getReplyToDestination(), event.getReplyToHandler());
       try {

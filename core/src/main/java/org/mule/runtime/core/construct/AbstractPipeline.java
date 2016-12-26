@@ -12,6 +12,8 @@ import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.startIfNeeded;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_COMPLETE;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_END;
 import static org.mule.runtime.core.context.notification.PipelineMessageNotification.PROCESS_START;
+import static org.mule.runtime.core.processor.strategy.LegacySynchronousProcessingStrategyFactory
+        .LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE;
 import static org.mule.runtime.core.transaction.TransactionCoordination.isTransactionActive;
 import static org.mule.runtime.core.util.NotificationUtils.buildPathResolver;
 import static org.mule.runtime.core.util.concurrent.ThreadNameHelper.getPrefix;
@@ -205,15 +207,14 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
 
   protected Function<Publisher<Event>, Publisher<Event>> transformStream(Function<Publisher<Event>, Publisher<Event>> function) {
     return publisher -> from(publisher)
-        .transform(processingStrategy.onPipeline(this, stream -> from(stream)
-            .transform(function)
-            .onErrorResumeWith(MessagingException.class, getExceptionListener())
-            .doOnNext(response -> response.getContext().success(response))
-            .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
-            .onErrorResumeWith(EventDroppedException.class, ede -> {
-              ede.getEvent().getContext().success();
-              return empty();
-            })));
+        .transform(processingStrategy.onPipeline(this, function))
+        .onErrorResumeWith(MessagingException.class, getExceptionListener())
+        .doOnNext(response -> response.getContext().success(response))
+        .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
+        .onErrorResumeWith(EventDroppedException.class, ede -> {
+          ede.getEvent().getContext().success();
+          return empty();
+        });
   }
 
   @Override
@@ -250,7 +251,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
 
         @Override
         public Event process(final Event event) throws MuleException {
-          if (isTransactionActive()) {
+          if (isTransactionActive() || processingStrategy == LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE) {
             return pipeline.process(event);
           } else {
             try {
