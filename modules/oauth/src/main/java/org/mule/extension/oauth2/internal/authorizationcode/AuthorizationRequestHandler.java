@@ -40,6 +40,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +67,18 @@ public class AuthorizationRequestHandler implements MuleContextAware, Startable,
    * to the redirectUrl.
    */
   @Parameter
-  @Optional
-  private String state;
+  @Optional(defaultValue = "#[null]")
+  private Function<Event, String> state;
+
+  /**
+   * Identifier under which the oauth authentication attributes are stored (accessToken, refreshToken, etc).
+   * <p>
+   * This attribute is only required when the applications needs to access resources from more than one user in the OAuth
+   * authentication server.
+   */
+  @Parameter
+  @Optional(defaultValue = "#[null]")
+  private Function<Event, String> localAuthorizationUrlResourceOwnerId;
 
   /**
    * If this attribute is provided mule will automatically create and endpoint in the host server that the user can hit to
@@ -116,9 +127,9 @@ public class AuthorizationRequestHandler implements MuleContextAware, Startable,
 
       final String onCompleteRedirectToValue =
           ((HttpRequestAttributes) muleEvent.getMessage().getAttributes()).getQueryParams().get("onCompleteRedirectTo");
-      final String resourceOwnerId = getOauthConfig().getLocalAuthorizationUrlResourceOwnerId();
+      final String resourceOwnerId = localAuthorizationUrlResourceOwnerId.apply(muleEvent);
       muleEvent = builder.addVariable(OAUTH_STATE_ID_FLOW_VAR_NAME, resourceOwnerId).build();
-      final StateEncoder stateEncoder = new StateEncoder(state);
+      final StateEncoder stateEncoder = new StateEncoder(state.apply(muleEvent));
       if (resourceOwnerId != null) {
         stateEncoder.encodeResourceOwnerIdInState(resourceOwnerId);
       }

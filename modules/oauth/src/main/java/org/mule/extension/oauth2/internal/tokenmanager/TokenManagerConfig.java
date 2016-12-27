@@ -11,6 +11,7 @@ import org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerO
 import org.mule.runtime.api.lifecycle.Initialisable;
 import org.mule.runtime.api.lifecycle.InitialisationException;
 import org.mule.runtime.core.api.MuleContext;
+import org.mule.runtime.core.api.context.MuleContextAware;
 import org.mule.runtime.core.api.registry.RegistrationException;
 import org.mule.runtime.core.api.store.ListableObjectStore;
 import org.mule.runtime.core.util.store.MuleObjectStoreManager;
@@ -22,8 +23,6 @@ import org.mule.runtime.extension.api.annotation.param.Parameter;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Inject;
-
 /**
  * Token manager stores all the OAuth State (access token, refresh token).
  *
@@ -31,7 +30,7 @@ import javax.inject.Inject;
  */
 @Alias("token-manager-config")
 @XmlHints(allowTopLevelDefinition = true)
-public class TokenManagerConfig implements Initialisable {
+public class TokenManagerConfig implements Initialisable, MuleContextAware {
 
   public static AtomicInteger defaultTokenManagerConfigIndex = new AtomicInteger(0);
   /**
@@ -46,11 +45,12 @@ public class TokenManagerConfig implements Initialisable {
   @Optional
   @Alias("objectStore-ref")
   private ListableObjectStore objectStore;
-  private ConfigOAuthContext configOAuthContext;
-  @Inject
-  private MuleContext muleContext;
-  private boolean initialised;
 
+  private MuleContext muleContext;
+
+  private ConfigOAuthContext configOAuthContext;
+
+  private boolean initialised;
 
   public void setObjectStore(ListableObjectStore objectStore) {
     this.objectStore = objectStore;
@@ -105,5 +105,10 @@ public class TokenManagerConfig implements Initialisable {
       resourceOwnerId = (String) params[0];
     }
     return getConfigOAuthContext().getContextForResourceOwner(resourceOwnerId);
+  }
+
+  @Override
+  public void setMuleContext(MuleContext muleContext) {
+    this.muleContext = muleContext;
   }
 }

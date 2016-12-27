@@ -27,9 +27,7 @@ import static org.mule.runtime.extension.api.declaration.type.TypeUtils.getExpre
 import static org.mule.runtime.extension.api.util.ExtensionModelUtils.isContent;
 import static org.mule.runtime.extension.api.util.NameUtils.hyphenize;
 import static org.mule.runtime.module.extension.internal.util.IntrospectionUtils.getMemberName;
-import com.google.common.collect.ImmutableList;
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
+
 import org.mule.metadata.api.model.ArrayType;
 import org.mule.metadata.api.model.DateTimeType;
 import org.mule.metadata.api.model.DateType;
@@ -83,8 +81,8 @@ import org.mule.runtime.module.extension.internal.runtime.resolver.NestedProcess
 import org.mule.runtime.module.extension.internal.runtime.resolver.StaticValueResolver;
 import org.mule.runtime.module.extension.internal.runtime.resolver.TypeSafeExpressionValueResolver;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ValueResolver;
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
+
+import com.google.common.collect.ImmutableList;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -104,7 +102,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 
 /**
  * Base class for parsers delegates which generate {@link ComponentBuildingDefinition} instances for the specific components types
@@ -501,7 +505,8 @@ public abstract class ExtensionDefinitionParser {
 
     final Class<Object> expectedClass = getType(expectedType);
 
-    if (isExpressionFunction(modelProperties) && value != null) {
+    // TODO MULE-11292 Provide a proper fix for this
+    if ((isExpressionFunction(modelProperties) || expectedClass.isAssignableFrom(Function.class)) && value != null) {
       resolver = new ExpressionFunctionValueResolver<>((String) value, expectedType, muleContext);
     } else if (isParameterResolver(modelProperties) && value != null) {
       resolver = new ExpressionBasedParameterResolverValueResolver<>((String) value, expectedType, muleContext);

@@ -39,19 +39,19 @@ public interface AuthorizationCodeGrantType extends ApplicationCredentials {
    */
   String getExternalCallbackUrl();
 
-  /**
-   * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
-   *         to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expression
-   *         is used during the local authorization url call to determine the resource owner id.
-   */
-  String getLocalAuthorizationUrlResourceOwnerId();
+  // /**
+  // * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
+  // * to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expression
+  // * is used during the local authorization url call to determine the resource owner id.
+  // */
+  // String getLocalAuthorizationUrlResourceOwnerId();
 
-  /**
-   * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
-   *         to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expressions
-   *         is used during http:request execution to determine the resource owner id.
-   */
-  String getResourceOwnerId();
+  // /**
+  // * @return the expression or static value of a certain user authenticated through this config. By being an expression we allow
+  // * to authenticate several users and hold state (access token, refresh token, etc) for all those users. This expressions
+  // * is used during http:request execution to determine the resource owner id.
+  // */
+  // String getResourceOwnerId();
 
   /**
    * Does a refresh token for a particular oauth context id.

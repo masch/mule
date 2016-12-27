@@ -6,7 +6,6 @@
  */
 package org.mule.extension.oauth2.internal.authorizationcode;
 
-import static java.lang.String.format;
 import static org.mule.extension.http.api.HttpHeaders.Names.AUTHORIZATION;
 import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
@@ -15,6 +14,7 @@ import org.mule.extension.http.internal.listener.server.HttpListenerConfig;
 import org.mule.extension.oauth2.api.RequestAuthenticationException;
 import org.mule.extension.oauth2.internal.AbstractGrantType;
 import org.mule.extension.oauth2.internal.authorizationcode.state.ConfigOAuthContext;
+import org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext;
 import org.mule.extension.oauth2.internal.tokenmanager.TokenManagerConfig;
 import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.api.exception.MuleException;
@@ -136,18 +136,8 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
    * authentication server.
    */
   @Parameter
-  @Optional
-  private String localAuthorizationUrlResourceOwnerId;
-
-  /**
-   * Identifier under which the oauth authentication attributes are stored (accessToken, refreshToken, etc).
-   * <p>
-   * This attribute is only required when the applications needs to access resources from more than one user in the OAuth
-   * authentication server.
-   */
-  @Parameter
-  @Optional // (defaultValue = DEFAULT_RESOURCE_OWNER_ID)
-  private String resourceOwnerId;
+  @Optional(defaultValue = ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID)
+  private Function<Event, String> resourceOwnerId;
 
   @Override
   public HttpListenerConfig getLocalCallbackConfig() {
@@ -174,15 +164,15 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
     return tokenRequestHandler.getRefreshTokenWhen();
   }
 
-  @Override
-  public String getLocalAuthorizationUrlResourceOwnerId() {
-    return localAuthorizationUrlResourceOwnerId;
-  }
+  // @Override
+  // public String getLocalAuthorizationUrlResourceOwnerId() {
+  // return localAuthorizationUrlResourceOwnerId;
+  // }
 
-  @Override
-  public String getResourceOwnerId() {
-    return resourceOwnerId;
-  }
+  // @Override
+  // public String getResourceOwnerId() {
+  // return resourceOwnerId;
+  // }
 
   @Override
   public void refreshToken(final Event currentFlowEvent, final String resourceOwnerId) throws MuleException {
@@ -221,8 +211,9 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
 
       if (tokenManager == null) {
         this.tokenManager = TokenManagerConfig.createDefault(muleContext);
-        this.tokenManager.initialise();
       }
+      initialiseIfNeeded(tokenManager, muleContext);
+
       if (localCallbackConfig != null && localCallbackUrl != null) {
         throw new IllegalArgumentException("Attributes localCallbackConfig and localCallbackUrl are mutually exclusive");
       }
@@ -283,11 +274,12 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
 
   @Override
   public void authenticate(Event muleEvent, HttpRequestBuilder builder) throws MuleException {
-    if (resourceOwnerId == null) {
-      throw new RequestAuthenticationException(createStaticMessage(format("Evaluation of %s return an empty resourceOwnerId",
-                                                                          localAuthorizationUrlResourceOwnerId)));
-    }
-    final String accessToken = getUserOAuthContext().getContextForResourceOwner(resourceOwnerId).getAccessToken();
+    // if (resourceOwnerId == null) {
+    // throw new RequestAuthenticationException(createStaticMessage(format("Evaluation of %s return an empty resourceOwnerId",
+    // localAuthorizationUrlResourceOwnerId)));
+    // }
+    final String accessToken =
+        getUserOAuthContext().getContextForResourceOwner(resourceOwnerId.apply(muleEvent)).getAccessToken();
     if (accessToken == null) {
       throw new RequestAuthenticationException(createStaticMessage(String.format(
                                                                                  "No access token for the %s user. Verify that you have authenticated the user before trying to execute an operation to the API.",
@@ -301,7 +293,7 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
     Boolean shouldRetryRequest = evaluateShouldRetry(firstAttemptResponseEvent);
     if (shouldRetryRequest) {
       try {
-        refreshToken(firstAttemptResponseEvent, resourceOwnerId);
+        refreshToken(firstAttemptResponseEvent, resourceOwnerId.apply(firstAttemptResponseEvent));
       } catch (MuleException e) {
         throw new MuleRuntimeException(e);
       }

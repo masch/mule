@@ -62,6 +62,19 @@ public class AuthorizationCodeMultitenantTestCase extends AbstractOAuthAuthoriza
     return "authorization-code/authorization-code-multitenant-config.xml";
   }
 
+  @Override
+  protected void doSetUp() throws Exception {
+    super.doSetUp();
+
+    // TODO MULE-11229 use the muleClient to generate this request. How can be the request-config eagerly initialized? Apparently
+    // has something to do with the config having expressions...
+    try {
+      flowRunner("initFlow").run();
+    } catch (Exception e) {
+      // ignore
+    }
+  }
+
   @Test
   public void danceWithCustomResourceOwnerId() throws Exception {
     executeForUserWithAccessToken(USER_ID_JOHN, JOHN_ACCESS_TOKEN, NO_STATE);

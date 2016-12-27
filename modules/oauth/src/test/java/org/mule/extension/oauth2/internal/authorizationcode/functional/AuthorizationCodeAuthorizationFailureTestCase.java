@@ -53,6 +53,8 @@ public class AuthorizationCodeAuthorizationFailureTestCase extends AbstractAutho
   protected void doSetUp() throws Exception {
     super.doSetUp();
 
+    // TODO MULE-11229 use the muleClient to generate this request. How can be the request-config eagerly initialized? Apparently
+    // has something to do with the config having expressions...
     try {
       flowRunner("initFlow").run();
     } catch (Exception e) {

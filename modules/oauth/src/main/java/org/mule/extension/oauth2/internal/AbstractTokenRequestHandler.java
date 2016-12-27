@@ -34,6 +34,7 @@ import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.tls.TlsContextFactory;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.Event;
+import org.mule.runtime.core.api.Event.Builder;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.context.MuleContextAware;
 import org.mule.runtime.core.api.message.InternalMessage;
@@ -48,6 +49,7 @@ import org.mule.service.http.api.client.HttpClientConfiguration;
 import org.mule.service.http.api.domain.message.response.HttpResponse;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.CookieManager;
 import java.util.HashMap;
 import java.util.List;
@@ -70,12 +72,10 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
    * MEL expression to extract the access token parameter from the response of the call to tokenUrl.
    */
   @Parameter
-  // @Expression(REQUIRED)
   @Optional(defaultValue = ACCESS_TOKEN_EXPRESSION)
   protected Function<Event, String> responseAccessToken;
 
   @Parameter
-  // @Expression(REQUIRED)
   @Optional(defaultValue = REFRESH_TOKEN_EXPRESSION)
   protected Function<Event, String> responseRefreshToken;
 
@@ -83,7 +83,6 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
    * MEL expression to extract the expiresIn parameter from the response of the call to tokenUrl.
    */
   @Parameter
-  // @Expression(REQUIRED)
   @Optional(defaultValue = EXPIRATION_TIME_EXPRESSION)
   protected Function<Event, String> responseExpiresIn;
 
@@ -100,7 +99,6 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
    * the response status code was 401 or 403.
    */
   @Parameter
-  // @Expression(REQUIRED)
   @Optional
   private Function<Event, String> refreshTokenWhen;
 
@@ -170,13 +168,19 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
                       null);
 
       Message responseMessage = httpResponseToMuleMessage.convert(event, response, tokenUrl);
-      Event responseEvent = Event.builder(event).message(InternalMessage.builder(responseMessage).build()).build();
+      final Builder responseEventBuilder = Event.builder(event).message((InternalMessage) responseMessage);
 
       if (((HttpResponseAttributes) responseMessage.getAttributes()).getStatusCode() >= BAD_REQUEST.getStatusCode()) {
-        throw new TokenUrlResponseException(responseEvent);
+        throw new TokenUrlResponseException(responseEventBuilder.build());
       }
 
-      return responseEvent;
+      if (responseMessage.getPayload().getDataType().isStreamType()) {
+        return responseEventBuilder.message(InternalMessage.builder(responseMessage)
+            .payload(org.mule.runtime.core.util.IOUtils.toString((InputStream) responseMessage.getPayload().getValue())).build())
+            .build();
+      } else {
+        return responseEventBuilder.build();
+      }
     } catch (IOException e) {
       throw new DefaultMuleException(e);
     } catch (TimeoutException e) {

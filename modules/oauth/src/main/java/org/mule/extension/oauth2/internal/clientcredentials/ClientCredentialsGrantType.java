@@ -113,6 +113,7 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
     if (tokenManager == null) {
       this.tokenManager = TokenManagerConfig.createDefault(muleContext);
     }
+
     tokenRequestHandler.setApplicationCredentials(this);
     tokenRequestHandler.setTokenManager(tokenManager);
     if (tlsContextFactory != null) {
