@@ -20,6 +20,9 @@ public class WssTimestampSecurityStrategy extends AbstractSecurityStrategy imple
     {
         appendAction(outConfigProperties, TIMESTAMP);
         outConfigProperties.put(TTL_TIMESTAMP, String.valueOf(expires));
+        appendAction(inConfigProperties, TIMESTAMP);
+        inConfigProperties.put(TTL_TIMESTAMP, String.valueOf(expires));
+
     }
 
     public long getExpires()

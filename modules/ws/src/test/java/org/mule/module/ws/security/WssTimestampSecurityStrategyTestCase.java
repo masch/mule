@@ -29,26 +29,33 @@ public class WssTimestampSecurityStrategyTestCase extends AbstractMuleTestCase
     @Test
     public void actionAndTtlTimestampFieldsAreSetOnEmptyMap()
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> outConfigProperties = new HashMap<String, Object>();
+        Map<String, Object> inConfigProperties = new HashMap<String, Object>();
         strategy.setExpires(EXPIRES);
-        strategy.apply(properties, null);
+        strategy.apply(outConfigProperties, inConfigProperties);
 
-        assertEquals(TIMESTAMP, properties.get(ACTION));
-        assertEquals(String.valueOf(EXPIRES), properties.get(TTL_TIMESTAMP));
+        assertEquals(TIMESTAMP, outConfigProperties.get(ACTION));
+        assertEquals(String.valueOf(EXPIRES), outConfigProperties.get(TTL_TIMESTAMP));
+        assertEquals(TIMESTAMP, inConfigProperties.get(ACTION));
+        assertEquals(String.valueOf(EXPIRES), inConfigProperties.get(TTL_TIMESTAMP));
     }
 
     @Test
     public void actionIsAppendedAfterExistingAction()
     {
-        Map<String, Object> properties = new HashMap<String, Object>();
-        properties.put(ACTION, USERNAME_TOKEN);
+        Map<String, Object> outConfigProperties = new HashMap<String, Object>();
+        outConfigProperties.put(ACTION, USERNAME_TOKEN);
+        Map<String, Object> inConfigProperties = new HashMap<String, Object>();
+        inConfigProperties.put(ACTION, USERNAME_TOKEN);
 
         strategy.setExpires(EXPIRES);
-        strategy.apply(properties, null);
+        strategy.apply(outConfigProperties, inConfigProperties);
 
         String expectedAction = USERNAME_TOKEN + " " + TIMESTAMP;
-        assertEquals(expectedAction, properties.get(ACTION));
-        assertEquals(String.valueOf(EXPIRES), properties.get(TTL_TIMESTAMP));
+        assertEquals(expectedAction, outConfigProperties.get(ACTION));
+        assertEquals(String.valueOf(EXPIRES), outConfigProperties.get(TTL_TIMESTAMP));
+        assertEquals(expectedAction, inConfigProperties.get(ACTION));
+        assertEquals(String.valueOf(EXPIRES), inConfigProperties.get(TTL_TIMESTAMP));
     }
 
 
