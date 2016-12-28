@@ -38,22 +38,20 @@ public class LegacySynchronousProcessingStrategyFactory implements ProcessingStr
 
     @Override
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
-      return new Sink(){
+      return new Sink() {
+
         @Override
-        public void accept(Event event)
-        {
+        public void accept(Event event) {
 
         }
 
         @Override
-        public void submit(Event event, Duration duration)
-        {
+        public void submit(Event event, Duration duration) {
 
         }
 
         @Override
-        public boolean emit(Event event)
-        {
+        public boolean emit(Event event) {
           return false;
         }
       };
