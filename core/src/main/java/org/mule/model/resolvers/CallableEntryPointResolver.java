@@ -6,8 +6,11 @@
  */
 package org.mule.model.resolvers;
 
+import static org.mule.api.transport.PropertyScope.SESSION;
 import org.mule.api.MuleEventContext;
+import org.mule.api.MuleMessage;
 import org.mule.api.MuleRuntimeException;
+import org.mule.api.MuleSession;
 import org.mule.api.lifecycle.Callable;
 import org.mule.api.model.EntryPointResolver;
 import org.mule.api.model.InvocationResult;
@@ -15,6 +18,8 @@ import org.mule.config.i18n.CoreMessages;
 import org.mule.config.i18n.MessageFactory;
 
 import java.lang.reflect.Method;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * An entry-point resolver that only allows Service objects that implement the
@@ -43,6 +48,7 @@ public class CallableEntryPointResolver implements EntryPointResolver
     {
         if (component instanceof Callable)
         {
+            copySessionProperties(context.getSession(), context.getMessage());
             Object result = ((Callable) component).onCall(context);
             return new InvocationResult(this, result, callableMethod);
         }
@@ -51,6 +57,17 @@ public class CallableEntryPointResolver implements EntryPointResolver
             InvocationResult result = new InvocationResult(this, InvocationResult.State.NOT_SUPPORTED);
             result.setErrorMessage(CoreMessages.objectDoesNotImplementInterface(component, Callable.class).toString());
             return result;
+        }
+    }
+
+    private void copySessionProperties(MuleSession session, MuleMessage muleMessage)
+    {
+        Set<String> namesProperties = session.getPropertyNamesAsSet();
+        Iterator<String> namesPropertiesIterator = namesProperties.iterator();
+        while (namesPropertiesIterator.hasNext())
+        {
+            String propertyName = namesPropertiesIterator.next();
+            muleMessage.setProperty(propertyName, session.getProperty(propertyName), SESSION);
         }
     }
 
