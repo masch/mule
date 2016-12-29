@@ -8,12 +8,10 @@ package org.mule.extension.oauth2.internal;
 
 import static org.mule.extension.http.api.HttpConstants.HttpStatus.FORBIDDEN;
 import static org.mule.extension.http.api.HttpConstants.HttpStatus.UNAUTHORIZED;
-import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 
 import org.mule.extension.http.api.HttpResponseAttributes;
 import org.mule.extension.http.api.request.authentication.HttpAuthentication;
 import org.mule.extension.oauth2.internal.tokenmanager.TokenManagerConfig;
-import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.api.message.Attributes;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
@@ -39,16 +37,11 @@ public abstract class AbstractGrantType implements HttpAuthentication, Applicati
   @Alias("tokenManager-ref")
   protected TokenManagerConfig tokenManager;
 
-  protected abstract Function<Event, String> getRefreshTokenWhen();
+  protected abstract Function<Event, Boolean> getRefreshTokenWhen();
 
   protected boolean evaluateShouldRetry(final Event firstAttemptResponseEvent) {
     if (getRefreshTokenWhen() != null) {
-      final Object value = Boolean.valueOf(getRefreshTokenWhen().apply(firstAttemptResponseEvent));
-      if (!(value instanceof Boolean)) {
-        throw new MuleRuntimeException(createStaticMessage("Expression %s should return a boolean but return %s",
-                                                           getRefreshTokenWhen(), value));
-      }
-      return (Boolean) value;
+      return getRefreshTokenWhen().apply(firstAttemptResponseEvent);
     } else {
       final Attributes attributes = firstAttemptResponseEvent.getMessage().getAttributes();
       if (attributes instanceof HttpResponseAttributes) {

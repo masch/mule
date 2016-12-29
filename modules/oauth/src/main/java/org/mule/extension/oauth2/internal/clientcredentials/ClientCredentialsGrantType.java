@@ -120,6 +120,7 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
       initialiseIfNeeded(tlsContextFactory);
       tokenRequestHandler.setTlsContextFactory(tlsContextFactory);
     }
+    tokenRequestHandler.setMuleContext(muleContext);
     tokenRequestHandler.initialise();
   }
 
@@ -130,7 +131,7 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
   // }
 
   @Override
-  public Function<Event, String> getRefreshTokenWhen() {
+  public Function<Event, Boolean> getRefreshTokenWhen() {
     return tokenRequestHandler.getRefreshTokenWhen();
   }
 

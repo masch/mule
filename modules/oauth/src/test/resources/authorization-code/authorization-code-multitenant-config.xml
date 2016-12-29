@@ -28,10 +28,4 @@
             </httpn:authentication>
         </httpn:request-connection>
     </httpn:request-config>
-
-    <!-- TODO MULE-11229 use the muleClient to generate this request -->
-    <flow name="initFlow">
-        <httpn:request config-ref="requestConfig" host="localhost" path="/init"/>
-    </flow>
-
 </mule>

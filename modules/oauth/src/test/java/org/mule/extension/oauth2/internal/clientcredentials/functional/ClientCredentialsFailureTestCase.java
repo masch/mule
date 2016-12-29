@@ -14,14 +14,9 @@ import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.hamcrest.core.Is.isA;
 import static org.mule.functional.junit4.matchers.ThrowableRootCauseMatcher.hasRootCause;
-import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.startIfNeeded;
-import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.stopIfNeeded;
 
 import org.mule.extension.oauth2.AbstractOAuthAuthorizationTestCase;
 import org.mule.extension.oauth2.internal.TokenNotFoundException;
-import org.mule.runtime.api.exception.MuleException;
-import org.mule.service.http.api.HttpService;
-import org.mule.services.http.impl.service.HttpServiceImplementation;
 import org.mule.tck.junit4.rule.DynamicPort;
 import org.mule.tck.junit4.rule.SystemProperty;
 import org.mule.test.runner.RunnerDelegateTo;
@@ -32,8 +27,6 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,18 +54,6 @@ public class ClientCredentialsFailureTestCase extends AbstractOAuthAuthorization
   public ExpectedException expectedException = ExpectedException.none();
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().port(dynamicPort.getNumber()));
-
-  private HttpService httpService = new HttpServiceImplementation();
-
-  @Before
-  public void before() throws MuleException {
-    startIfNeeded(httpService);
-  }
-
-  @After
-  public void after() throws MuleException {
-    stopIfNeeded(httpService);
-  }
 
   @Override
   protected String getConfigFile() {
@@ -102,48 +83,4 @@ public class ClientCredentialsFailureTestCase extends AbstractOAuthAuthorization
   public void runTest() {
     // Nothing to do here since the test subject is run during the setup.
   }
-
-  // @Test
-  // public void tokenUrlFailsDuringAppStartup() throws Exception {
-  // testWithSystemProperty(TOKEN_PATH_PROPERTY_NAME, "http://unkownhost:9999" + TOKEN_PATH, () -> {
-  // ApplicationContextBuilder applicationContextBuilder = new WithServicesApplicationContextBuilder(httpService)
-  // .setApplicationResources(new String[] {"client-credentials/client-credentials-minimal-config.xml"});
-  // expectedException.expectCause(isA(IOException.class));
-  // applicationContextBuilder.build();
-  // });
-  // }
-  //
-  // @Test
-  // public void accessTokenNotRetrieve() throws Exception {
-  // wireMockRule.stubFor(post(urlEqualTo(TOKEN_PATH)).willReturn(aResponse().withBody(EMPTY)));
-  // testWithSystemProperty(TOKEN_PATH_PROPERTY_NAME, format("http://localhost:%s%s", wireMockRule.port(), TOKEN_PATH), () -> {
-  // ApplicationContextBuilder applicationContextBuilder =
-  // new WithServicesApplicationContextBuilder(httpService).setApplicationResources(new String[] {
-  // "client-credentials/client-credentials-minimal-config.xml"});
-  // expectedException.expectCause(isA(TokenNotFoundException.class));
-  // applicationContextBuilder.build();
-  // });
-  // }
-  //
-  // private static class WithServicesApplicationContextBuilder extends ApplicationContextBuilder {
-  //
-  // private HttpService httpService;
-  //
-  // public WithServicesApplicationContextBuilder(HttpService httpService) {
-  // this.httpService = httpService;
-  // }
-  //
-  // @Override
-  // protected void addBuilders(List<ConfigurationBuilder> builders) {
-  // super.addBuilders(builders);
-  // builders.add(new TestServicesConfigurationBuilder());
-  // builders.add(new AbstractConfigurationBuilder() {
-  //
-  // @Override
-  // protected void doConfigure(MuleContext muleContext) throws Exception {
-  // muleContext.getRegistry().registerObject(httpService.getName(), httpService);
-  // }
-  // });
-  // }
-  // }
 }

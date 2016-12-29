@@ -100,7 +100,7 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
    */
   @Parameter
   @Optional
-  private Function<Event, String> refreshTokenWhen;
+  private Function<Event, Boolean> refreshTokenWhen;
 
   /**
    * The oauth authentication server url to get access to the token. Mule, after receiving the authentication code from the oauth
@@ -128,14 +128,7 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
     }
   };
 
-  /**
-   * @param refreshTokenWhen expression to use to determine if the response from a request to the API requires a new token
-   */
-  public void setRefreshTokenWhen(Function<Event, String> refreshTokenWhen) {
-    this.refreshTokenWhen = refreshTokenWhen;
-  }
-
-  public Function<Event, String> getRefreshTokenWhen() {
+  public Function<Event, Boolean> getRefreshTokenWhen() {
     return refreshTokenWhen;
   }
 

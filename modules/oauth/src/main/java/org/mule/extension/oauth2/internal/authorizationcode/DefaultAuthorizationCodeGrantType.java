@@ -7,6 +7,7 @@
 package org.mule.extension.oauth2.internal.authorizationcode;
 
 import static org.mule.extension.http.api.HttpHeaders.Names.AUTHORIZATION;
+import static org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID;
 import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
 
@@ -14,7 +15,6 @@ import org.mule.extension.http.internal.listener.server.HttpListenerConfig;
 import org.mule.extension.oauth2.api.RequestAuthenticationException;
 import org.mule.extension.oauth2.internal.AbstractGrantType;
 import org.mule.extension.oauth2.internal.authorizationcode.state.ConfigOAuthContext;
-import org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext;
 import org.mule.extension.oauth2.internal.tokenmanager.TokenManagerConfig;
 import org.mule.runtime.api.connection.ConnectionException;
 import org.mule.runtime.api.exception.MuleException;
@@ -136,7 +136,7 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
    * authentication server.
    */
   @Parameter
-  @Optional(defaultValue = ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID)
+  @Optional(defaultValue = DEFAULT_RESOURCE_OWNER_ID)
   private Function<Event, String> resourceOwnerId;
 
   @Override
@@ -160,7 +160,7 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
   }
 
   @Override
-  protected Function<Event, String> getRefreshTokenWhen() {
+  protected Function<Event, Boolean> getRefreshTokenWhen() {
     return tokenRequestHandler.getRefreshTokenWhen();
   }
 
