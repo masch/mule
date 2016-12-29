@@ -97,6 +97,7 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
 
   @After
   public void after() {
+    flow.dispose();
     cpuLight.shutdownNow();
     blocking.shutdownNow();
     cpuIntensive.shutdownNow();
