@@ -16,6 +16,8 @@ import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -55,17 +57,16 @@ public class MultiReactorProcessingStrategyFactory extends ReactorProcessingStra
 
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
       WorkQueueProcessor<Event> processor = WorkQueueProcessor.share(cpuLightScheduler, false);
-      Cancellation cancellation1 = processor.transform(function).retry().subscribe();
-      Cancellation cancellation2 = processor.transform(function).retry().subscribe();
-      Cancellation cancellation3 = processor.transform(function).retry().subscribe();
+      List<Cancellation> cancellationList = new ArrayList<>();
+      for (int i = 0; i <= Runtime.getRuntime().availableProcessors() / 2; i++) {
+        cancellationList.add(processor.transform(function).retry().subscribe());
+      }
       BlockingSink blockingSink = processor.connectSink();
       return new ReactorSink(blockingSink, flowConstruct, new Cancellation() {
 
         @Override
         public void dispose() {
-          cancellation1.dispose();
-          cancellation2.dispose();
-          cancellation3.dispose();
+          cancellationList.stream().forEach(cancellation -> cancellation.dispose());
         }
       });
     }

@@ -102,7 +102,7 @@ public class PipelineMessageNotificationTestCase extends AbstractReactiveProcess
 
   @After
   public void after() throws MuleException {
-    stopIfNeeded(muleContext.getSchedulerService());
+    pipeline.dispose();
   }
 
   @Test
@@ -153,21 +153,26 @@ public class PipelineMessageNotificationTestCase extends AbstractReactiveProcess
   @Test
   public void oneWayException() throws Exception {
     Flow pipeline = new Flow("test", muleContext);
-    pipeline.setExceptionListener(new DefaultMessagingExceptionStrategy());
-    List<Processor> processors = new ArrayList<>();
-    processors.add(new ExceptionThrowingMessageProcessor());
-    pipeline.setMessageProcessors(processors);
-    pipeline.initialise();
-    pipeline.start();
+    try {
 
-    event = Event.builder(context).message(InternalMessage.builder().payload("request").build()).exchangePattern(ONE_WAY)
-        .flow(pipeline).build();
+      pipeline.setExceptionListener(new DefaultMessagingExceptionStrategy());
+      List<Processor> processors = new ArrayList<>();
+      processors.add(new ExceptionThrowingMessageProcessor());
+      pipeline.setMessageProcessors(processors);
+      pipeline.initialise();
+      pipeline.start();
 
-    thrown.expect(instanceOf(MessagingException.class));
-    thrown.expectCause(instanceOf(IllegalStateException.class));
-    processFlow(pipeline, event);
+      event = Event.builder(context).message(InternalMessage.builder().payload("request").build()).exchangePattern(ONE_WAY)
+          .flow(pipeline).build();
 
-    verifyException();
+      thrown.expect(instanceOf(MessagingException.class));
+      thrown.expectCause(instanceOf(IllegalStateException.class));
+      processFlow(pipeline, event);
+
+      verifyException();
+    } finally {
+      pipeline.dispose();
+    }
   }
 
   private void verifySucess() {

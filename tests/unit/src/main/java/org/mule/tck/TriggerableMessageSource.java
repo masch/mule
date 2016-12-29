@@ -37,7 +37,7 @@ public class TriggerableMessageSource implements NonBlockingMessageSource, PushS
     return listener.process(event);
   }
 
-  public void accept(Event event) throws MuleException {
+  public void accept(Event event) {
     sink.accept(event);
   }
 

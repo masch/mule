@@ -55,7 +55,7 @@ public class ProactorProcessingStrategyFactory extends MultiReactorProcessingStr
                                           muleContext);
   }
 
-  static class ProactorProcessingStrategy extends ReactorProcessingStrategy {
+  static class ProactorProcessingStrategy extends MultiReactorProcessingStrategy {
 
     private Supplier<Scheduler> blockingSchedulerSupplier;
     private Supplier<Scheduler> cpuIntensiveSchedulerSupplier;

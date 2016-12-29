@@ -37,10 +37,17 @@ public class InterceptorTestCase extends AbstractMuleContextTestCase {
   private final String SINGLE_INTERCEPTOR_RESULT = INTERCEPTOR_ONE + BEFORE + COMPONENT + INTERCEPTOR_ONE + AFTER;
   private final String MULTIPLE_INTERCEPTOR_RESULT = INTERCEPTOR_ONE + BEFORE + INTERCEPTOR_TWO + BEFORE + INTERCEPTOR_THREE
       + BEFORE + COMPONENT + INTERCEPTOR_THREE + AFTER + INTERCEPTOR_TWO + AFTER + INTERCEPTOR_ONE + AFTER;
+  private Flow flow;
+
+  @Override
+  protected void doTearDown() throws Exception {
+    super.doTearDown();
+    flow.dispose();
+  }
 
   @Test
   public void testSingleInterceptor() throws Exception {
-    Flow flow = createUninitializedFlow();
+    flow = createUninitializedFlow();
     TestComponent component = (TestComponent) flow.getMessageProcessors().get(0);
 
     List<Interceptor> interceptors = new ArrayList<>();
@@ -58,7 +65,7 @@ public class InterceptorTestCase extends AbstractMuleContextTestCase {
 
   @Test
   public void testMultipleInterceptor() throws Exception {
-    Flow flow = createUninitializedFlow();
+    flow = createUninitializedFlow();
     TestComponent component = (TestComponent) flow.getMessageProcessors().get(0);
 
     List<Interceptor> interceptors = new ArrayList<>();
@@ -78,7 +85,7 @@ public class InterceptorTestCase extends AbstractMuleContextTestCase {
 
   @Test
   public void testSingleInterceptorStack() throws Exception {
-    Flow flow = createUninitializedFlow();
+    flow = createUninitializedFlow();
     TestComponent component = (TestComponent) flow.getMessageProcessors().get(0);
 
     List<Interceptor> interceptors = new ArrayList<>();
@@ -98,7 +105,7 @@ public class InterceptorTestCase extends AbstractMuleContextTestCase {
 
   @Test
   public void testMultipleInterceptorStack() throws Exception {
-    Flow flow = createUninitializedFlow();
+    flow = createUninitializedFlow();
     TestComponent component = (TestComponent) flow.getMessageProcessors().get(0);
 
     List<Interceptor> interceptors = new ArrayList<>();
@@ -120,7 +127,7 @@ public class InterceptorTestCase extends AbstractMuleContextTestCase {
 
   @Test
   public void testMultipleInterceptorStack2() throws Exception {
-    Flow flow = createUninitializedFlow();
+    flow = createUninitializedFlow();
     TestComponent component = (TestComponent) flow.getMessageProcessors().get(0);
 
     List<Interceptor> interceptors = new ArrayList<>();
