@@ -133,6 +133,7 @@ public final class DefaultExtensionManager
   /**
    * {@inheritDoc}
    */
+  //ACA
   @Override
   public ConfigurationInstance getConfiguration(String configurationProviderName,
                                                 org.mule.runtime.api.message.MuleEvent muleEvent) {

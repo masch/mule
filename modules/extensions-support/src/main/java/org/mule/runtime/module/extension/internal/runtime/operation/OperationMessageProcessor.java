@@ -191,8 +191,9 @@ public class OperationMessageProcessor extends ExtensionComponent implements Pro
   }
 
   @Override
-  protected void doInitialise() throws InitialisationException {
+  public void doInitialise() throws InitialisationException {
     returnDelegate = createReturnDelegate();
+    // fijate aca habla con lautaro para ver como sacar esto desde un smart connector.
     operationExecutor = getOperationExecutorFactory(operationModel).createExecutor(operationModel);
     executionMediator = createExecutionMediator();
     initialiseIfNeeded(operationExecutor, true, muleContext);

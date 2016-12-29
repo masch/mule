@@ -15,6 +15,7 @@ import org.mule.runtime.api.connection.PoolingConnectionProvider;
 import org.mule.runtime.extension.api.annotation.param.NullSafe;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
+import org.mule.runtime.extension.api.client.MuleClient;
 import org.mule.service.http.api.HttpService;
 
 import java.util.List;
@@ -27,6 +28,9 @@ import javax.inject.Inject;
  * @since 4.0
  */
 public class WscConnectionProvider implements PoolingConnectionProvider<WscConnection> {
+
+  @Inject
+  private MuleClient muleClient;
 
   @Inject
   private HttpService httpService;
@@ -95,7 +99,8 @@ public class WscConnectionProvider implements PoolingConnectionProvider<WscConne
                              mtomEnabled,
                              securityStrategies,
                              httpService,
-                             null);
+                             null,
+                             muleClient);
   }
 
   /**

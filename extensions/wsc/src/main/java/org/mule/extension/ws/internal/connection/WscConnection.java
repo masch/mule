@@ -7,6 +7,7 @@
 package org.mule.extension.ws.internal.connection;
 
 import static java.lang.String.format;
+import static org.mule.runtime.api.connection.ConnectionValidationResult.failure;
 import static org.mule.runtime.api.connection.ConnectionValidationResult.success;
 import org.mule.extension.ws.api.SoapVersion;
 import org.mule.extension.ws.api.security.SecurityStrategy;
@@ -20,11 +21,21 @@ import org.mule.extension.ws.internal.introspection.WsdlIntrospecter;
 import org.mule.metadata.api.TypeLoader;
 import org.mule.metadata.xml.XmlTypeLoader;
 import org.mule.runtime.api.connection.ConnectionException;
+import org.mule.runtime.api.connection.ConnectionExceptionCode;
 import org.mule.runtime.api.connection.ConnectionValidationResult;
+import org.mule.runtime.api.exception.MuleException;
+import org.mule.runtime.api.message.Attributes;
+import org.mule.runtime.extension.api.client.DefaultOperationParameters;
+import org.mule.runtime.extension.api.client.MuleClient;
+import org.mule.runtime.extension.api.client.OperationParameters;
+import org.mule.runtime.extension.api.runtime.operation.Result;
 import org.mule.service.http.api.HttpService;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.cxf.binding.soap.SoapHeader;
 import org.apache.cxf.message.Attachment;
 import org.apache.cxf.message.Exchange;
@@ -43,6 +54,7 @@ public class WscConnection {
   private final TypeLoader typeLoader;
   private final AttachmentRequestEnricher requestEnricher;
   private final AttachmentResponseEnricher responseEnricher;
+  private final MuleClient muleClient;
 
   public WscConnection(String wsdlLocation,
                        String address,
@@ -52,9 +64,10 @@ public class WscConnection {
                        boolean mtomEnabled,
                        List<SecurityStrategy> securities,
                        HttpService httpService,
-                       String transportConfig)
-      throws ConnectionException {
-
+                       String transportConfig,
+                       MuleClient muleClient)
+    throws ConnectionException {
+    this.muleClient = muleClient;
     this.wsdlIntrospecter = new WsdlIntrospecter(wsdlLocation, service, port);
 
     if (wsdlIntrospecter.isRpcStyle()) {
@@ -93,6 +106,18 @@ public class WscConnection {
 
   public ConnectionValidationResult validateConnection() {
     // TODO: MULE-10783 - add validation request with the http requester config. Maybe hit the "?wsdl" uri.
+    OperationParameters params =
+      DefaultOperationParameters.builder()
+        .configName("httpTransport")
+        .addParameter("path", "/hit")
+        .addParameter("method", "GET")
+        .build();
+    try {
+      Result<InputStream, Attributes> execute = muleClient.execute("HTTP", "request", params);
+      System.out.println(IOUtils.toString(execute.getOutput()));
+    } catch (MuleException | IOException e) {
+      failure("Failed", ConnectionExceptionCode.CANNOT_REACH, e);
+    }
     return success();
   }
 
@@ -117,6 +142,10 @@ public class WscConnection {
       return address;
     }
     return wsdlIntrospecter.getSoapAddress()
-        .orElseThrow(() -> new ConnectionException("No address was specified and no one was found for the given configuration"));
+      .orElseThrow(() -> new ConnectionException("No address was specified and no one was found for the given configuration"));
+  }
+
+  public MuleClient getMuleClient() {
+    return muleClient;
   }
 }
