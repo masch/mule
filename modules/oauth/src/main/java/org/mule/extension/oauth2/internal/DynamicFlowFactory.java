@@ -29,7 +29,6 @@ public class DynamicFlowFactory {
     final Flow flow = new Flow(flowName, muleContext);
     flow.setMessageProcessors(messageProcessors);
     muleContext.getRegistry().registerFlowConstruct(flow);
-    // flow.start();
     return flow;
   }
 }

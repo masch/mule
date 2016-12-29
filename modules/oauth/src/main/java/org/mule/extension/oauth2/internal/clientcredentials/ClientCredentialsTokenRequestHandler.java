@@ -49,7 +49,7 @@ public class ClientCredentialsTokenRequestHandler extends AbstractTokenRequestHa
   @Optional
   private String scopes;
   private ApplicationCredentials applicationCredentials;
-  // private TokenResponseConfiguration tokenResponseConfiguration = new TokenResponseConfiguration();
+
   @UseConfig
   private TokenManagerConfig tokenManager;
 

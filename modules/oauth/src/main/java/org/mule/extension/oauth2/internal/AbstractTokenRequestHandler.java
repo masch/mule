@@ -99,7 +99,7 @@ public abstract class AbstractTokenRequestHandler implements Initialisable, Star
    * the response status code was 401 or 403.
    */
   @Parameter
-  @Optional
+  @Optional(defaultValue = "#[message.attributes.statusCode == 401 || message.attributes.statusCode == 403]")
   private Function<Event, Boolean> refreshTokenWhen;
 
   /**

@@ -6,21 +6,13 @@
  */
 package org.mule.extension.oauth2.internal;
 
-import static org.mule.extension.http.api.HttpConstants.HttpStatus.FORBIDDEN;
-import static org.mule.extension.http.api.HttpConstants.HttpStatus.UNAUTHORIZED;
-
-import org.mule.extension.http.api.HttpResponseAttributes;
 import org.mule.extension.http.api.request.authentication.HttpAuthentication;
 import org.mule.extension.oauth2.internal.tokenmanager.TokenManagerConfig;
-import org.mule.runtime.api.message.Attributes;
-import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.context.MuleContextAware;
 import org.mule.runtime.extension.api.annotation.Alias;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
-
-import java.util.function.Function;
 
 /**
  * Common interface for all grant types must extend this interface.
@@ -36,22 +28,6 @@ public abstract class AbstractGrantType implements HttpAuthentication, Applicati
   @Optional
   @Alias("tokenManager-ref")
   protected TokenManagerConfig tokenManager;
-
-  protected abstract Function<Event, Boolean> getRefreshTokenWhen();
-
-  protected boolean evaluateShouldRetry(final Event firstAttemptResponseEvent) {
-    if (getRefreshTokenWhen() != null) {
-      return getRefreshTokenWhen().apply(firstAttemptResponseEvent);
-    } else {
-      final Attributes attributes = firstAttemptResponseEvent.getMessage().getAttributes();
-      if (attributes instanceof HttpResponseAttributes) {
-        return ((HttpResponseAttributes) attributes).getStatusCode() == UNAUTHORIZED.getStatusCode()
-            || ((HttpResponseAttributes) attributes).getStatusCode() == FORBIDDEN.getStatusCode();
-      } else {
-        return false;
-      }
-    }
-  }
 
   /**
    * @param accessToken an ouath access token

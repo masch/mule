@@ -11,7 +11,9 @@ import static org.mule.extension.http.api.HttpHeaders.Names.AUTHORIZATION;
 import static org.mule.extension.http.internal.HttpConnectorConstants.TLS_CONFIGURATION;
 import static org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID;
 import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
+import static org.mule.runtime.api.meta.ExpressionSupport.NOT_SUPPORTED;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
+import static org.mule.runtime.extension.api.annotation.param.display.Placement.SECURITY_TAB;
 
 import org.mule.extension.oauth2.api.RequestAuthenticationException;
 import org.mule.extension.oauth2.internal.AbstractGrantType;
@@ -24,6 +26,7 @@ import org.mule.runtime.api.lifecycle.Startable;
 import org.mule.runtime.api.lifecycle.Stoppable;
 import org.mule.runtime.api.tls.TlsContextFactory;
 import org.mule.runtime.core.api.Event;
+import org.mule.runtime.extension.api.annotation.Expression;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
 import org.mule.runtime.extension.api.annotation.param.ParameterGroup;
@@ -63,28 +66,13 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
    */
   @Parameter
   @Optional
+  @Expression(NOT_SUPPORTED)
   @DisplayName(TLS_CONFIGURATION)
-  @Placement(tab = TLS_CONFIGURATION)
+  @Placement(tab = SECURITY_TAB)
   private TlsContextFactory tlsContextFactory;
-
-  public void setClientId(final String clientId) {
-    this.clientId = clientId;
-  }
-
-  public void setClientSecret(final String clientSecret) {
-    this.clientSecret = clientSecret;
-  }
-
-  public void setTokenRequestHandler(final ClientCredentialsTokenRequestHandler tokenRequestHandler) {
-    this.tokenRequestHandler = tokenRequestHandler;
-  }
 
   public TlsContextFactory getTlsContext() {
     return tlsContextFactory;
-  }
-
-  public void setTlsContext(TlsContextFactory tlsContextFactory) {
-    this.tlsContextFactory = tlsContextFactory;
   }
 
   @Override
@@ -124,21 +112,6 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
     tokenRequestHandler.initialise();
   }
 
-  // @Override
-  // public void setMuleContext(final MuleContext context) {
-  // this.muleContext = context;
-  // tokenRequestHandler.setMuleContext(context);
-  // }
-
-  @Override
-  public Function<Event, Boolean> getRefreshTokenWhen() {
-    return tokenRequestHandler.getRefreshTokenWhen();
-  }
-
-  public void refreshAccessToken() throws MuleException {
-    tokenRequestHandler.refreshAccessToken();
-  }
-
   @Override
   public void authenticate(Event muleEvent, HttpRequestBuilder builder) throws MuleException {
     final String accessToken =
@@ -152,10 +125,10 @@ public class ClientCredentialsGrantType extends AbstractGrantType implements Ini
 
   @Override
   public boolean shouldRetry(final Event firstAttemptResponseEvent) {
-    final Boolean shouldRetryRequest = evaluateShouldRetry(firstAttemptResponseEvent);
+    final Boolean shouldRetryRequest = tokenRequestHandler.getRefreshTokenWhen().apply(firstAttemptResponseEvent);
     if (shouldRetryRequest) {
       try {
-        refreshAccessToken();
+        tokenRequestHandler.refreshAccessToken();
       } catch (MuleException e) {
         throw new MuleRuntimeException(e);
       }

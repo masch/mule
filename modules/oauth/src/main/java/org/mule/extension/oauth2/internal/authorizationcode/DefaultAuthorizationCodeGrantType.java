@@ -6,10 +6,14 @@
  */
 package org.mule.extension.oauth2.internal.authorizationcode;
 
+import static java.lang.String.format;
 import static org.mule.extension.http.api.HttpHeaders.Names.AUTHORIZATION;
+import static org.mule.extension.http.internal.HttpConnectorConstants.TLS_CONFIGURATION;
 import static org.mule.extension.oauth2.internal.authorizationcode.state.ResourceOwnerOAuthContext.DEFAULT_RESOURCE_OWNER_ID;
 import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
+import static org.mule.runtime.api.meta.ExpressionSupport.NOT_SUPPORTED;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
+import static org.mule.runtime.extension.api.annotation.param.display.Placement.SECURITY_TAB;
 
 import org.mule.extension.http.internal.listener.server.HttpListenerConfig;
 import org.mule.extension.oauth2.api.RequestAuthenticationException;
@@ -27,10 +31,13 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
 import org.mule.runtime.extension.api.annotation.Alias;
+import org.mule.runtime.extension.api.annotation.Expression;
 import org.mule.runtime.extension.api.annotation.param.Optional;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
 import org.mule.runtime.extension.api.annotation.param.ParameterGroup;
 import org.mule.runtime.extension.api.annotation.param.UseConfig;
+import org.mule.runtime.extension.api.annotation.param.display.DisplayName;
+import org.mule.runtime.extension.api.annotation.param.display.Placement;
 import org.mule.service.http.api.HttpService;
 import org.mule.service.http.api.domain.message.request.HttpRequestBuilder;
 import org.mule.service.http.api.server.HttpServer;
@@ -123,8 +130,9 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
    */
   @Parameter
   @Optional
-  // @DisplayName(TLS_CONFIGURATION)
-  // @Placement(tab = TLS, group = TLS_CONFIGURATION)
+  @Expression(NOT_SUPPORTED)
+  @DisplayName(TLS_CONFIGURATION)
+  @Placement(tab = SECURITY_TAB)
   private TlsContextFactory tlsContextFactory;
 
   private HttpServer server;
@@ -160,26 +168,6 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
   }
 
   @Override
-  protected Function<Event, Boolean> getRefreshTokenWhen() {
-    return tokenRequestHandler.getRefreshTokenWhen();
-  }
-
-  // @Override
-  // public String getLocalAuthorizationUrlResourceOwnerId() {
-  // return localAuthorizationUrlResourceOwnerId;
-  // }
-
-  // @Override
-  // public String getResourceOwnerId() {
-  // return resourceOwnerId;
-  // }
-
-  @Override
-  public void refreshToken(final Event currentFlowEvent, final String resourceOwnerId) throws MuleException {
-    tokenRequestHandler.refreshToken(currentFlowEvent, resourceOwnerId);
-  }
-
-  @Override
   public ConfigOAuthContext getUserOAuthContext() {
     return tokenManager.getConfigOAuthContext();
   }
@@ -197,10 +185,6 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
   @Override
   public TlsContextFactory getTlsContext() {
     return tlsContextFactory;
-  }
-
-  public void setTlsContext(TlsContextFactory tlsContextFactory) {
-    this.tlsContextFactory = tlsContextFactory;
   }
 
   @Override
@@ -274,26 +258,21 @@ public class DefaultAuthorizationCodeGrantType extends AbstractGrantType impleme
 
   @Override
   public void authenticate(Event muleEvent, HttpRequestBuilder builder) throws MuleException {
-    // if (resourceOwnerId == null) {
-    // throw new RequestAuthenticationException(createStaticMessage(format("Evaluation of %s return an empty resourceOwnerId",
-    // localAuthorizationUrlResourceOwnerId)));
-    // }
     final String accessToken =
         getUserOAuthContext().getContextForResourceOwner(resourceOwnerId.apply(muleEvent)).getAccessToken();
     if (accessToken == null) {
-      throw new RequestAuthenticationException(createStaticMessage(String.format(
-                                                                                 "No access token for the %s user. Verify that you have authenticated the user before trying to execute an operation to the API.",
-                                                                                 resourceOwnerId)));
+      throw new RequestAuthenticationException(createStaticMessage(format("No access token for the %s user. Verify that you have authenticated the user before trying to execute an operation to the API.",
+                                                                          resourceOwnerId)));
     }
     builder.addHeader(AUTHORIZATION, buildAuthorizationHeaderContent(accessToken));
   }
 
   @Override
   public boolean shouldRetry(final Event firstAttemptResponseEvent) throws MuleException {
-    Boolean shouldRetryRequest = evaluateShouldRetry(firstAttemptResponseEvent);
+    Boolean shouldRetryRequest = tokenRequestHandler.getRefreshTokenWhen().apply(firstAttemptResponseEvent);
     if (shouldRetryRequest) {
       try {
-        refreshToken(firstAttemptResponseEvent, resourceOwnerId.apply(firstAttemptResponseEvent));
+        tokenRequestHandler.refreshToken(firstAttemptResponseEvent, resourceOwnerId.apply(firstAttemptResponseEvent));
       } catch (MuleException e) {
         throw new MuleRuntimeException(e);
       }
