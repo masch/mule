@@ -41,7 +41,7 @@ final class ExpressionFunction<T> implements Function<Event, T> {
     try {
       // TODO MULE-11292 Provide a proper fix for this
       Class<Object> type = getType(this.type);
-      if (type.isAssignableFrom(Function.class)) {
+      if (Function.class.isAssignableFrom(type)) {
         return (T) new TypeSafeExpressionValueResolver<>(expression, Object.class, muleContext).resolve(event);
       } else {
         return new TypeSafeExpressionValueResolver<T>(expression, type, muleContext).resolve(event);

@@ -506,7 +506,7 @@ public abstract class ExtensionDefinitionParser {
     final Class<Object> expectedClass = getType(expectedType);
 
     // TODO MULE-11292 Provide a proper fix for this
-    if ((isExpressionFunction(modelProperties) || expectedClass.isAssignableFrom(Function.class)) && value != null) {
+    if ((isExpressionFunction(modelProperties) || Function.class.isAssignableFrom(expectedClass)) && value != null) {
       resolver = new ExpressionFunctionValueResolver<>((String) value, expectedType, muleContext);
     } else if (isParameterResolver(modelProperties) && value != null) {
       resolver = new ExpressionBasedParameterResolverValueResolver<>((String) value, expectedType, muleContext);
