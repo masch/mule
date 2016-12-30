@@ -22,6 +22,7 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.connector.ReplyToHandler;
 import org.mule.runtime.core.api.execution.ExecutionTemplate;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.DynamicPipeline;
 import org.mule.runtime.core.api.processor.DynamicPipelineBuilder;
 import org.mule.runtime.core.api.processor.DynamicPipelineException;
@@ -53,7 +54,7 @@ import reactor.core.publisher.Mono;
  * <li>Supports the optional configuration of a {@link ProcessingStrategy} that determines how message processors are processed.
  * </ul>
  */
-public class Flow extends AbstractPipeline implements Processor, DynamicPipeline {
+public class Flow extends AbstractPipeline implements Processor, AsyncProcessor, DynamicPipeline {
 
   private DynamicPipelineMessageProcessor dynamicPipelineMessageProcessor;
 
@@ -63,7 +64,7 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
 
   @Override
   public Event process(final Event event) throws MuleException {
-    if (isTransactionActive() || processingStrategy == LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE) {
+    if (useBlockingCodePath()) {
       // TODO MULE-11023	Migrate transaction execution template mechanism to use non-blocking API
       final Event newEvent = createMuleEventForCurrentFlow(event, event.getReplyToDestination(), event.getReplyToHandler());
       try {
@@ -80,8 +81,8 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
       }
     } else {
       try {
-        sink.accept(createMuleEventForCurrentFlow(event, event.getReplyToDestination(), event.getReplyToHandler()));
-        return Mono.from(event.getContext()).map(response -> createReturnEventForParentFlowConstruct(response, event)).block();
+        sink.accept(event);
+        return Mono.from(event.getContext()).block();
       } catch (Exception e) {
         throw rxExceptionToMuleException(e);
       }
@@ -89,17 +90,21 @@ public class Flow extends AbstractPipeline implements Processor, DynamicPipeline
   }
 
   @Override
+  public Publisher<Event> processAsync(Event event)
+  {
+    sink.accept(event);
+    return event.getContext();
+  }
+
+  @Override
   public Publisher<Event> apply(Publisher<Event> publisher) {
-    if (isTransactionActive()) {
+    if (useBlockingCodePath()) {
       // TODO MULE-11023	Migrate transaction execution template mechanism to use non-blocking API
       return Processor.super.apply(publisher);
     } else {
       return from(publisher).concatMap(event -> just(event)
           .map(request -> createMuleEventForCurrentFlow(request, request.getReplyToDestination(), request.getReplyToHandler()))
-          .transform(processingStrategy.onPipeline(this, pipeline))
-          .onErrorResumeWith(MessagingException.class, getExceptionListener())
-          .doOnError(UNEXPECTED_EXCEPTION_PREDICATE,
-                     throwable -> LOGGER.error("Unhandled exception in async processing " + throwable))
+          .concatMap(request -> processAsync(request))
           .map(response -> createReturnEventForParentFlowConstruct(response, event)));
     }
   }

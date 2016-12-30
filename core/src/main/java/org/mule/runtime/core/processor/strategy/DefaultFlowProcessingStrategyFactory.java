@@ -41,19 +41,12 @@ public class DefaultFlowProcessingStrategyFactory extends ProactorProcessingStra
                                              muleContext);
   }
 
-  static class DefaultFlowProcessingStrategy extends ProactorProcessingStrategy {
+  public static class DefaultFlowProcessingStrategy extends ProactorProcessingStrategy {
 
     public DefaultFlowProcessingStrategy(Supplier<Scheduler> eventLoop, Supplier<Scheduler> io, Supplier<Scheduler> cpu,
                                          Consumer<Scheduler> schedulerStopper,
                                          MuleContext muleContext) {
       super(eventLoop, io, cpu, schedulerStopper, muleContext);
-    }
-
-    @Override
-    protected Consumer<Event> assertCanProcess() {
-      // Do nothing given event should still be processed when transaction is active
-      return event -> {
-      };
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.mule.runtime.core.processor.strategy.ProactorProcessingStrategyFactor
 import org.mule.runtime.core.transaction.TransactionCoordination;
 import org.mule.tck.testmodels.mule.TestTransaction;
 
+import org.junit.Test;
 import ru.yandex.qatools.allure.annotations.Description;
 import ru.yandex.qatools.allure.annotations.Features;
 import ru.yandex.qatools.allure.annotations.Stories;
@@ -44,10 +45,7 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
       + " cpu light thread.")
   public void singleCpuLight() throws Exception {
     super.singleCpuLight();
-    assertThat(threads.size(), equalTo(1));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(1l));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(0l));
+    assertThreads(0, 1, 0, 0);
   }
 
   @Override
@@ -55,7 +53,7 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
       + " cpu light threads. MULE-11132 is needed for true reactor behaviour.")
   public void singleCpuLightConcurrent() throws Exception {
     super.singleCpuLightConcurrent();
-    assertThat(threads.size(), equalTo(2));
+    assertThreads(0, 2, 0, 0);
   }
 
   @Override
@@ -63,20 +61,20 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
       + " cpu light thread.")
   public void multipleCpuLight() throws Exception {
     super.multipleCpuLight();
-    assertThat(threads.size(), equalTo(1));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(1l));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(0l));
+    assertThreads(0, 1, 0, 0);
   }
 
   @Override
   @Description("With the ProactorProcessingStrategy, a BLOCKING message processor is scheduled on a IO thread.")
   public void singleBlocking() throws Exception {
     super.singleBlocking();
-    assertThat(threads.size(), equalTo(1));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo(1l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(0l));
+    assertThreads(0, 0, 1, 0);
+  }
+
+  @Test
+  public void singleBlockingConcurrent() throws Exception {
+    super.singleBlockingConcurrent();
+    assertThreads(0, 0, 2, 0);
   }
 
   @Override
@@ -96,10 +94,7 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
   @Description("With the ProactorProcessingStrategy, a CPU_INTENSIVE message processor is scheduled on a CPU intensive thread.")
   public void singleCpuIntensive() throws Exception {
     super.singleCpuIntensive();
-    assertThat(threads.size(), equalTo(1));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(1l));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(0l));
+    assertThreads(0, 0, 0, 1);
   }
 
   @Override

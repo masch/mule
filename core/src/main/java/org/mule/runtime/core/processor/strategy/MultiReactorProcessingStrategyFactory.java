@@ -58,17 +58,12 @@ public class MultiReactorProcessingStrategyFactory extends ReactorProcessingStra
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
       WorkQueueProcessor<Event> processor = WorkQueueProcessor.share(cpuLightScheduler, false);
       List<Cancellation> cancellationList = new ArrayList<>();
-      for (int i = 0; i <= Runtime.getRuntime().availableProcessors() / 2; i++) {
+      for (int i = 0; i <= Runtime.getRuntime().availableProcessors(); i++) {
         cancellationList.add(processor.transform(function).retry().subscribe());
       }
       BlockingSink blockingSink = processor.connectSink();
-      return new ReactorSink(blockingSink, flowConstruct, new Cancellation() {
-
-        @Override
-        public void dispose() {
-          cancellationList.stream().forEach(cancellation -> cancellation.dispose());
-        }
-      });
+      return new ReactorSink(blockingSink, flowConstruct,
+                             () -> cancellationList.stream().forEach(cancellation -> cancellation.dispose()));
     }
   }
 

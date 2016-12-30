@@ -36,7 +36,7 @@ public class SynchronousProcessingStrategyFactory implements ProcessingStrategyF
 
     @Override
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
-      FluxProcessor<Event, Event> processor = EmitterProcessor.<Event>create(1, false).serialize();
+      FluxProcessor<Event, Event> processor = EmitterProcessor.<Event>create(false).serialize();
       Cancellation cancellation = processor.transform(function).retry().subscribe();
       return new ReactorSink(processor.connectSink(), flowConstruct, cancellation);
     }

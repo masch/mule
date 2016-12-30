@@ -33,7 +33,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
   @Override
   protected ProcessingStrategy createProcessingStrategy(MuleContext muleContext, String schedulersNamePrefix) {
     return new WorkQueueProcessingStrategy(() -> blocking, scheduler -> {
-    }, muleContext);
+    }, 2, muleContext);
   }
 
   @Override
@@ -41,7 +41,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void singleCpuLight() throws Exception {
     super.singleCpuLight();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -49,7 +49,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void singleCpuLightConcurrent() throws Exception {
     super.singleCpuLightConcurrent();
-    assertSynchronousIOScheduler(2);
+    assertThreads(0, 0, 2, 0);
   }
 
   @Override
@@ -57,7 +57,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void multipleCpuLight() throws Exception {
     super.multipleCpuLight();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -65,7 +65,15 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void singleBlocking() throws Exception {
     super.singleBlocking();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
+  }
+
+  @Override
+  @Description("Regardless of processor type, when the WorkQueueProcessingStrategy is configured, the pipeline is executed "
+               + "synchronously in a single IO thead.")
+  public void singleBlockingConcurrent() throws Exception {
+    super.singleBlockingConcurrent();
+    assertThreads(0, 0, 2, 0);
   }
 
   @Override
@@ -73,7 +81,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void multipleBlocking() throws Exception {
     super.multipleBlocking();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -81,7 +89,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void singleCpuIntensive() throws Exception {
     super.singleCpuIntensive();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -89,7 +97,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void multipleCpuIntensive() throws Exception {
     super.multipleCpuIntensive();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -97,7 +105,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void mix() throws Exception {
     super.mix();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -105,7 +113,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
       + "synchronously in a single IO thead.")
   public void mix2() throws Exception {
     super.mix2();
-    assertSynchronousIOScheduler(1);
+    assertThreads(0, 0, 1, 0);
   }
 
   @Override
@@ -120,13 +128,6 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
     expectedException.expect(DefaultMuleException.class);
     expectedException.expectMessage(equalTo(TRANSACTIONAL_ERROR_MESSAGE));
     process(flow, testEvent());
-  }
-
-  private void assertSynchronousIOScheduler(int concurrency) {
-    assertThat(threads.size(), equalTo(concurrency));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo((long) concurrency));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(0l));
   }
 
 }

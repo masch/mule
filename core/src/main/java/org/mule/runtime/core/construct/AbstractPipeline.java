@@ -58,6 +58,7 @@ import org.mule.runtime.core.processor.AbstractRequestResponseMessageProcessor;
 import org.mule.runtime.core.processor.IdempotentRedeliveryPolicy;
 import org.mule.runtime.core.processor.chain.DefaultMessageProcessorChainBuilder;
 import org.mule.runtime.core.processor.strategy.DefaultFlowProcessingStrategyFactory;
+import org.mule.runtime.core.processor.strategy.DefaultFlowProcessingStrategyFactory.DefaultFlowProcessingStrategy;
 import org.mule.runtime.core.processor.strategy.LegacyAsynchronousProcessingStrategyFactory;
 import org.mule.runtime.core.processor.strategy.LegacyNonBlockingProcessingStrategyFactory;
 import org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory;
@@ -250,7 +251,7 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
 
         @Override
         public Event process(final Event event) throws MuleException {
-          if (isTransactionActive() || processingStrategy == LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE) {
+          if (useBlockingCodePath()) {
             return pipeline.process(event);
           } else {
             try {
@@ -384,6 +385,10 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
     return flowMap.resolvePath(processor);
   }
 
+  protected boolean useBlockingCodePath() {
+    return (isTransactionActive() && processingStrategy instanceof DefaultFlowProcessingStrategy)
+        || processingStrategy == LEGACY_SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE;
+  }
 
   public class ProcessIfPipelineStartedMessageProcessor extends AbstractFilteringMessageProcessor implements
       InternalMessageProcessor {

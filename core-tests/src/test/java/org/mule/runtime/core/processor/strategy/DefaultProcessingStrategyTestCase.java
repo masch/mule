@@ -48,10 +48,7 @@ public class DefaultProcessingStrategyTestCase extends ProactorProcessingStrateg
 
     process(flow, testEvent());
 
-    assertThat(threads.size(), equalTo(1));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo(0l));
-    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo(0l));
+    assertThreads(1, 0, 0, 0);
   }
 
 }

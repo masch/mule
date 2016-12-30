@@ -21,15 +21,21 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.construct.FlowConstruct;
 import org.mule.runtime.core.api.exception.MessagingExceptionHandler;
+import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import reactor.core.Cancellation;
+import reactor.core.publisher.BlockingSink;
+import reactor.core.publisher.WorkQueueProcessor;
 
 /**
  * Creates {@link WorkQueueProcessingStrategy} instances. This processing strategy dispatches incoming messages to a work queue
@@ -42,8 +48,6 @@ import org.reactivestreams.Publisher;
  */
 public class WorkQueueProcessingStrategyFactory implements ProcessingStrategyFactory {
 
-  public static final String TRANSACTIONAL_ERROR_MESSAGE = "Unable to process a transactional flow asynchronously";
-
   private int maxThreads;
 
   @Override
@@ -52,6 +56,7 @@ public class WorkQueueProcessingStrategyFactory implements ProcessingStrategyFac
         .ioScheduler(config().withMaxConcurrentTasks(maxThreads).withName(schedulersNamePrefix)),
                                            scheduler -> scheduler.stop(muleContext.getConfiguration().getShutdownTimeout(),
                                                                        MILLISECONDS),
+                                           maxThreads,
                                            muleContext);
   }
 
@@ -59,21 +64,24 @@ public class WorkQueueProcessingStrategyFactory implements ProcessingStrategyFac
 
     private Supplier<Scheduler> schedulerSupplier;
     private Scheduler scheduler;
+    private int maxThreads;
 
     public WorkQueueProcessingStrategy(Supplier<Scheduler> schedulerSupplier, Consumer<Scheduler> schedulerStopper,
-                                       MuleContext muleContext) {
+                                       int maxThreads, MuleContext muleContext) {
       super(schedulerStopper, muleContext);
       this.schedulerSupplier = schedulerSupplier;
+      this.maxThreads = maxThreads;
     }
 
-    @Override
-    public Function<Publisher<Event>, Publisher<Event>> onPipeline(FlowConstruct flowConstruct,
-                                                                   Function<Publisher<Event>, Publisher<Event>> pipelineFunction,
-                                                                   MessagingExceptionHandler messagingExceptionHandler) {
-      return publisher -> from(publisher)
-          .doOnNext(assertCanProcessAsync())
-          .publishOn(fromExecutorService(scheduler))
-          .transform(pipelineFunction);
+    public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
+      WorkQueueProcessor<Event> processor = WorkQueueProcessor.share(scheduler, false);
+      List<Cancellation> cancellationList = new ArrayList<>();
+      for (int i = 0; i <= maxThreads; i++) {
+        cancellationList.add(processor.transform(function).retry().subscribe());
+      }
+      BlockingSink blockingSink = processor.connectSink();
+      return new ReactorSink(blockingSink, flowConstruct,
+                             () -> cancellationList.stream().forEach(cancellation -> cancellation.dispose()));
     }
 
     @Override

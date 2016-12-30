@@ -77,7 +77,6 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
       return new ReactorSink(blockingSink, flowConstruct, cancellation);
     }
 
-
     @Override
     public void start() throws MuleException {
       this.cpuLightScheduler = cpuLightSchedulerSupplier.get();
@@ -95,16 +94,8 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
                                                                    Function<Publisher<Event>, Publisher<Event>> pipelineFunction,
                                                                    MessagingExceptionHandler messagingExceptionHandler) {
       return publisher -> from(publisher)
-          .doOnNext(assertCanProcess())
+          .publishOn(fromExecutorService(cpuLightScheduler))
           .transform(pipelineFunction);
-    }
-
-    protected Consumer<Event> assertCanProcess() {
-      return event -> {
-        if (isTransactionActive()) {
-          throw propagate(new DefaultMuleException(createStaticMessage(TRANSACTIONAL_ERROR_MESSAGE)));
-        }
-      };
     }
 
   }

@@ -10,9 +10,16 @@ import static java.lang.Thread.currentThread;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mule.runtime.core.api.processor.ReactiveProcessor.ProcessingType.BLOCKING;
+import static reactor.core.Exceptions.unwrap;
+import static reactor.core.publisher.Mono.from;
 
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.scheduler.Scheduler;
+import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.Processor;
@@ -22,8 +29,9 @@ import org.mule.runtime.core.api.registry.RegistrationException;
 import org.mule.runtime.core.construct.Flow;
 import org.mule.runtime.core.util.concurrent.Latch;
 import org.mule.runtime.core.util.concurrent.NamedThreadFactory;
-import org.mule.tck.junit4.AbstractReactiveProcessorTestCase;
+import org.mule.tck.junit4.AbstractMuleContextTestCase;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
@@ -32,6 +40,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -39,9 +48,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiveProcessorTestCase {
+@RunWith(Parameterized.class)
+public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleContextTestCase
+{
 
+  protected static int LATCH_TIMEOUT_MS = 200;
   protected static final String CPU_LIGHT = "cpuLight";
   protected static final String IO = "I/O";
   protected static final String CPU_INTENSIVE = "cpuIntensive";
@@ -66,7 +80,7 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
 
     @Override
     public ProcessingType getProcessingType() {
-      return ProcessingType.BLOCKING;
+      return BLOCKING;
     }
   };
 
@@ -74,19 +88,25 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
   protected Scheduler blocking;
   protected Scheduler cpuIntensive;
   private ExecutorService asyncExecutor;
+  private Mode mode;
 
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
   public AbstractProcessingStrategyTestCase(Mode mode) {
-    super(mode);
+    this.mode = mode;
+  }
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return asList(new Object[][] {{Mode.BLOCKING}, {Mode.ASYNC}});
   }
 
   @Before
   public void before() throws RegistrationException {
-    cpuLight = new TestScheduler(3, CPU_LIGHT);
-    blocking = new TestScheduler(3, IO);
-    cpuIntensive = new TestScheduler(3, CPU_INTENSIVE);
+    cpuLight = new TestScheduler(10, CPU_LIGHT);
+    blocking = new TestScheduler(10, IO);
+    cpuIntensive = new TestScheduler(10, CPU_INTENSIVE);
     asyncExecutor = newSingleThreadExecutor();
 
     flow = new Flow("test", muleContext);
@@ -97,7 +117,6 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
 
   @After
   public void after() {
-    flow.dispose();
     cpuLight.shutdownNow();
     blocking.shutdownNow();
     cpuIntensive.shutdownNow();
@@ -143,6 +162,21 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
     flow.start();
 
     process(flow, testEvent());
+  }
+
+  @Test
+  public void singleBlockingConcurrent() throws Exception {
+    FirstInvocationLatchedProcessor latchedProcessor = new FirstInvocationLatchedProcessor(BLOCKING);
+
+    flow.setMessageProcessors(singletonList(latchedProcessor));
+    flow.initialise();
+    flow.start();
+
+    asyncExecutor.submit(() -> process(flow, testEvent()));
+
+    latchedProcessor.awaitFirst();
+    process(flow, testEvent());
+    latchedProcessor.releaseFirst();
   }
 
   @Test
@@ -194,6 +228,14 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
   @Test
   public abstract void tx() throws Exception;
 
+  protected void assertThreads(int test, int cpuLite, int io, int cpuIntensive)
+  {
+    assertThat(threads.size(), equalTo(test + cpuLite + io + cpuIntensive));
+    assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo((long) cpuLite));
+    assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo((long) io));
+    assertThat(threads.stream().filter(name -> name.startsWith(CPU_INTENSIVE)).count(), equalTo((long) cpuIntensive));
+  }
+
   class FirstInvocationLatchedProcessor implements Processor {
 
     private ProcessingType type;
@@ -211,7 +253,9 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
       if (firstCalled.compareAndSet(false, true)) {
         firstCalledLatch.release();
         try {
-          latch.await();
+          if(!latch.await(LATCH_TIMEOUT_MS, MILLISECONDS)){
+            throw new DefaultMuleException(new TimeoutException(""));
+          }
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
@@ -279,4 +323,26 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractReactiv
     }
 
   }
+
+  protected Event process(Flow flow, Event event) throws Exception {
+    switch (mode) {
+      case BLOCKING:
+        return flow.process(event);
+      case ASYNC:
+        try {
+          return from(flow.processAsync(event)).block();
+        } catch (Throwable exception) {
+          throw (Exception) unwrap(exception);
+        }
+      default:
+        return null;
+    }
+  }
+
+  public enum Mode {
+    BLOCKING,
+    ASYNC,
+  }
+
+
 }
