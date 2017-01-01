@@ -107,7 +107,7 @@ public class Flow extends AbstractPipeline implements Processor, AsyncProcessor,
     } else {
       return from(publisher).concatMap(event -> just(event)
           .map(request -> createMuleEventForCurrentFlow(request, request.getReplyToDestination(), request.getReplyToHandler()))
-          .transform(processingStrategy.onPipeline(this, pipeline))
+          .transform(pipeline)
           .onErrorResumeWith(MessagingException.class, getExceptionListener())
           .doOnError(UNEXPECTED_EXCEPTION_PREDICATE,
                      throwable -> LOGGER.error("Unhandled exception in async processing " + throwable))
