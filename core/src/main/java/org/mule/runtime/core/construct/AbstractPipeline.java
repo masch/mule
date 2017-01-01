@@ -18,7 +18,9 @@ import static org.mule.runtime.core.util.NotificationUtils.buildPathResolver;
 import static org.mule.runtime.core.util.concurrent.ThreadNameHelper.getPrefix;
 import static org.mule.runtime.core.util.rx.Exceptions.rxExceptionToMuleException;
 import static reactor.core.publisher.Flux.from;
+import static reactor.core.publisher.Flux.just;
 import static reactor.core.publisher.Mono.empty;
+import static reactor.core.publisher.Mono.fromCallable;
 
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.lifecycle.LifecycleException;
@@ -30,6 +32,7 @@ import org.mule.runtime.core.api.config.MuleConfiguration;
 import org.mule.runtime.core.api.config.MuleProperties;
 import org.mule.runtime.core.api.construct.FlowConstructInvalidException;
 import org.mule.runtime.core.api.construct.Pipeline;
+import org.mule.runtime.core.api.processor.AbstractAsyncProcessor;
 import org.mule.runtime.core.api.processor.DefaultMessageProcessorPathElement;
 import org.mule.runtime.core.api.processor.InternalMessageProcessor;
 import org.mule.runtime.core.api.processor.MessageProcessorBuilder;
@@ -42,11 +45,11 @@ import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
+import org.mule.runtime.core.api.source.AsyncMessageSource;
 import org.mule.runtime.core.api.source.ClusterizableMessageSource;
 import org.mule.runtime.core.api.source.CompositeMessageSource;
 import org.mule.runtime.core.api.source.MessageSource;
 import org.mule.runtime.core.api.source.NonBlockingMessageSource;
-import org.mule.runtime.core.api.source.PushSource;
 import org.mule.runtime.core.api.transport.LegacyInboundEndpoint;
 import org.mule.runtime.core.config.i18n.CoreMessages;
 import org.mule.runtime.core.connector.ConnectException;
@@ -263,6 +266,20 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
           }
         }
       });
+      if (messageSource instanceof AsyncMessageSource) {
+        ((AsyncMessageSource) messageSource).setListener(new AbstractAsyncProcessor() {
+
+          @Override
+          public Publisher<Event> processAsync(Event event) {
+            if (useBlockingCodePath()) {
+              return fromCallable(() -> pipeline.process(event));
+            } else {
+              sink.accept(event);
+              return event.getContext();
+            }
+          }
+        });
+      }
     }
 
     injectFlowConstructMuleContext(messageSource);
@@ -326,9 +343,6 @@ public abstract class AbstractPipeline extends AbstractFlowConstruct implements 
     super.doStart();
     startIfStartable(processingStrategy);
     sink = processingStrategy.getSink(this, transformStream(pipeline));
-    if (messageSource instanceof PushSource) {
-      ((PushSource) messageSource).setSink(sink);
-    }
     startIfStartable(pipeline);
     startIfNeeded(processingStrategy);
     canProcessMessage = true;

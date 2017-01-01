@@ -56,6 +56,7 @@ import org.mule.runtime.api.meta.model.source.SourceModel;
 import org.mule.runtime.api.scheduler.Scheduler;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.construct.FlowConstruct;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.retry.RetryPolicyTemplate;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
@@ -138,7 +139,7 @@ public class ExtensionMessageSourceTestCase extends AbstractMuleContextTestCase 
   Scheduler cpuLightScheduler;
 
   @Mock(answer = RETURNS_DEEP_STUBS)
-  private Processor messageProcessor;
+  private AsyncProcessor messageProcessor;
 
   @Mock
   private SourceCompletionHandlerFactory completionHandlerFactory;

@@ -6,10 +6,13 @@
  */
 package org.mule.runtime.module.extension.internal.runtime.source;
 
+import static org.mule.runtime.core.util.rx.Exceptions.*;
 import static org.mule.runtime.core.util.rx.Exceptions.rxExceptionToMuleException;
+import static reactor.core.publisher.Mono.from;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.message.MuleEvent;
 import org.mule.runtime.core.api.Event;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.exception.MessagingException;
 import org.mule.runtime.api.exception.MuleException;
@@ -30,16 +33,14 @@ import reactor.core.publisher.Mono;
 final class ModuleFlowProcessingTemplate implements ModuleFlowProcessingPhaseTemplate {
 
   private final Message message;
-  private final Processor messageProcessor;
-  private final Sink sink;
+  private final AsyncProcessor messageProcessor;
   private final SourceCompletionHandler completionHandler;
   private final MessageProcessContext messageProcessorContext;
 
-  ModuleFlowProcessingTemplate(Message message, Processor messageProcessor, SourceCompletionHandler completionHandler,
-                               MessageProcessContext messageProcessContext, Sink sink) {
+  ModuleFlowProcessingTemplate(Message message, AsyncProcessor messageProcessor, SourceCompletionHandler completionHandler,
+                               MessageProcessContext messageProcessContext) {
     this.message = message;
     this.messageProcessor = messageProcessor;
-    this.sink = sink;
     this.completionHandler = completionHandler;
     this.messageProcessorContext = messageProcessContext;
   }
@@ -62,14 +63,17 @@ final class ModuleFlowProcessingTemplate implements ModuleFlowProcessingPhaseTem
   @Override
   public Event routeEvent(Event muleEvent) throws MuleException {
     // TODO MULE-11250 Migrate MessageSource to PushSource approach in transports and tests
-    return messageProcessor.process(muleEvent);
+    try {
+      return from(routeEventAsync(muleEvent)).block();
+    } catch (Throwable t) {
+      throw rxExceptionToMuleException(t);
+    }
   }
 
   @Override
-  public Publisher<Event> dispatchEvent(Event muleEvent) {
+  public Publisher<Event> routeEventAsync(Event muleEvent) {
     // TODO MULE-11252 Migrate MessageSources to use event submission instead of blocking accept
-    sink.accept(muleEvent);
-    return muleEvent.getContext();
+    return messageProcessor.processAsync(muleEvent);
   }
 
   @Override

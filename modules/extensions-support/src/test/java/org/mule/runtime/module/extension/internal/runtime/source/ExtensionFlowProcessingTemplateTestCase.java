@@ -17,9 +17,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Mono.just;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.core.api.Event;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.exception.MessagingException;
 import org.mule.runtime.core.execution.ExceptionCallback;
@@ -36,6 +38,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import reactor.core.publisher.Mono;
 
 @SmallTest
 @RunWith(MockitoJUnitRunner.class)
@@ -48,7 +51,7 @@ public class ExtensionFlowProcessingTemplateTestCase extends AbstractMuleTestCas
   private Event event;
 
   @Mock
-  private Processor messageProcessor;
+  private AsyncProcessor messageProcessor;
 
   @Mock
   private MessageProcessContext messageProcessorContext;
@@ -74,7 +77,8 @@ public class ExtensionFlowProcessingTemplateTestCase extends AbstractMuleTestCas
 
   @Before
   public void before() {
-    template = new ModuleFlowProcessingTemplate(message, messageProcessor, completionHandler, messageProcessorContext, null);
+    template = new ModuleFlowProcessingTemplate(message, messageProcessor, completionHandler, messageProcessorContext);
+    when(messageProcessor.processAsync(any(Event.class))).thenReturn(just(event));
   }
 
   @Test
@@ -85,7 +89,13 @@ public class ExtensionFlowProcessingTemplateTestCase extends AbstractMuleTestCas
   @Test
   public void routeEvent() throws Exception {
     template.routeEvent(event);
-    verify(messageProcessor).process(event);
+    verify(messageProcessor).processAsync(event);
+  }
+
+  @Test
+  public void routeEventAsync() throws Exception {
+    template.routeEventAsync(event);
+    verify(messageProcessor).processAsync(event);
   }
 
   @Test

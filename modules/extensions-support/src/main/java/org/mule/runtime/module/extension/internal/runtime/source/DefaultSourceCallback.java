@@ -11,6 +11,7 @@ import static org.mule.runtime.module.extension.internal.util.MuleExtensionUtils
 import org.mule.runtime.api.message.Attributes;
 import org.mule.runtime.api.util.Preconditions;
 import org.mule.runtime.core.api.construct.FlowConstruct;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.execution.ExceptionCallback;
@@ -43,13 +44,8 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
 
     private DefaultSourceCallback<T, A> product = new DefaultSourceCallback();
 
-    public Builder<T, A> setListener(Processor listener) {
+    public Builder<T, A> setListener(AsyncProcessor listener) {
       product.listener = listener;
-      return this;
-    }
-
-    public Builder<T, A> setSink(Sink sink) {
-      product.sink = sink;
       return this;
     }
 
@@ -79,7 +75,7 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
     }
 
     public SourceCallback<T, A> build() {
-      checkArgument(product.sink, "sink");
+      checkArgument(product.listener, "listener");
       checkArgument(product.flowConstruct, "flowConstruct");
       checkArgument(product.exceptionCallback, "exceptionCallback");
       checkArgument(product.messageProcessingManager, "messageProcessingManager");
@@ -101,13 +97,12 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
     return new Builder();
   }
 
-  private Processor listener;
+  private AsyncProcessor listener;
   private FlowConstruct flowConstruct;
   private ExceptionCallback exceptionCallback;
   private MessageProcessingManager messageProcessingManager;
   private Supplier<MessageProcessContext> processContextSupplier;
   private SourceCompletionHandlerFactory completionHandlerFactory;
-  private Sink sink;
 
   private DefaultSourceCallback() {}
 
@@ -130,7 +125,7 @@ class DefaultSourceCallback<T, A extends Attributes> implements SourceCallback<T
                                                                              listener,
                                                                              completionHandlerFactory
                                                                                  .createCompletionHandler(context),
-                                                                             messageProcessContext, sink),
+                                                                             messageProcessContext),
                                             messageProcessContext);
   }
 

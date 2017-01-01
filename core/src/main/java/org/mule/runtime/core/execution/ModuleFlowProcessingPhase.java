@@ -86,7 +86,7 @@ public class ModuleFlowProcessingPhase
             .doOnNext(request -> fireNotification(messageProcessContext.getMessageSource(), request,
                                                   messageProcessContext.getFlowConstruct(),
                                                   MESSAGE_RECEIVED))
-            .and(request -> from(template.dispatchEvent(request)))
+            .and(request -> from(template.routeEventAsync(request)))
             .doOnSuccess(getSuccessConsumer(messageSource, exceptionHandler, errorConsumer,
                                             messageProcessContext, phaseResultNotifier,
                                             template))

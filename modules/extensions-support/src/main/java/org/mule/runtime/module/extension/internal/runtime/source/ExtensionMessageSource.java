@@ -24,14 +24,14 @@ import org.mule.runtime.api.meta.model.source.SourceModel;
 import org.mule.runtime.api.scheduler.Scheduler;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.construct.FlowConstruct;
+import org.mule.runtime.core.api.processor.AsyncProcessor;
 import org.mule.runtime.core.api.processor.Processor;
-import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.retry.RetryCallback;
 import org.mule.runtime.core.api.retry.RetryContext;
 import org.mule.runtime.core.api.retry.RetryPolicyTemplate;
 import org.mule.runtime.core.api.scheduler.SchedulerService;
+import org.mule.runtime.core.api.source.AsyncMessageSource;
 import org.mule.runtime.core.api.source.MessageSource;
-import org.mule.runtime.core.api.source.PushSource;
 import org.mule.runtime.core.api.transaction.TransactionConfig;
 import org.mule.runtime.core.exception.ErrorTypeLocator;
 import org.mule.runtime.core.execution.ExceptionCallback;
@@ -49,7 +49,6 @@ import org.mule.runtime.module.extension.internal.runtime.operation.IllegalOpera
 import org.mule.runtime.module.extension.internal.runtime.operation.IllegalSourceException;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
@@ -61,7 +60,7 @@ import org.slf4j.Logger;
  *
  * @since 4.0
  */
-public class ExtensionMessageSource extends ExtensionComponent implements PushSource, ExceptionCallback {
+public class ExtensionMessageSource extends ExtensionComponent implements AsyncMessageSource, ExceptionCallback {
 
   private static final Logger LOGGER = getLogger(ExtensionMessageSource.class);
 
@@ -75,8 +74,7 @@ public class ExtensionMessageSource extends ExtensionComponent implements PushSo
   private final SourceAdapterFactory sourceAdapterFactory;
   private final RetryPolicyTemplate retryPolicyTemplate;
   private final ExceptionEnricherManager exceptionEnricherManager;
-  private Processor messageProcessor;
-  private Sink sink;
+  private AsyncProcessor messageProcessor;
 
   private SourceAdapter sourceAdapter;
   private Scheduler retryScheduler;
@@ -129,7 +127,6 @@ public class ExtensionMessageSource extends ExtensionComponent implements PushSo
         .setProcessingManager(messageProcessingManager)
         .setProcessContextSupplier(this::createProcessingContext)
         .setCompletionHandlerFactory(completionHandlerFactory)
-        .setSink(sink)
         .build();
   }
 
@@ -268,8 +265,8 @@ public class ExtensionMessageSource extends ExtensionComponent implements PushSo
   }
 
   @Override
-  public void setSink(Sink sink) {
-    this.sink = sink;
+  public void setListener(Processor listener) {
+
   }
 
   private class SourceRetryCallback implements RetryCallback {
@@ -304,7 +301,7 @@ public class ExtensionMessageSource extends ExtensionComponent implements PushSo
   }
 
   @Override
-  public void setListener(Processor listener) {
+  public void setListener(AsyncProcessor listener) {
     messageProcessor = listener;
   }
 

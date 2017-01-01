@@ -41,7 +41,7 @@ public interface ModuleFlowProcessingPhaseTemplate extends MessageProcessTemplat
    */
   Event routeEvent(Event event) throws MuleException;
 
-  Publisher<Event> dispatchEvent(Event event);
+  Publisher<Event> routeEventAsync(Event event);
 
   /**
    * Template method to send a response after processing the message.
