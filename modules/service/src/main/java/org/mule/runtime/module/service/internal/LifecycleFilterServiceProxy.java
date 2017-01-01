@@ -5,7 +5,7 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
 import static org.mule.runtime.core.util.ClassUtils.findImplementedInterfaces;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;

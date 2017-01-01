@@ -42,13 +42,13 @@ import org.mule.runtime.module.deployment.impl.internal.plugin.MuleExtensionMode
 import org.mule.runtime.module.deployment.impl.internal.policy.ApplicationPolicyTemplateClassLoaderBuilderFactory;
 import org.mule.runtime.module.deployment.impl.internal.policy.PolicyTemplateClassLoaderBuilderFactory;
 import org.mule.runtime.module.deployment.impl.internal.temporary.TemporaryArtifactClassLoaderBuilderFactory;
-import org.mule.runtime.module.service.DefaultServiceDiscoverer;
-import org.mule.runtime.module.service.FileSystemServiceProviderDiscoverer;
-import org.mule.runtime.module.service.MuleServiceManager;
-import org.mule.runtime.module.service.ReflectionServiceProviderResolutionHelper;
-import org.mule.runtime.module.service.ReflectionServiceResolver;
-import org.mule.runtime.module.service.ServiceClassLoaderFactory;
-import org.mule.runtime.module.service.ServiceDescriptor;
+import org.mule.runtime.module.service.internal.DefaultServiceDiscoverer;
+import org.mule.runtime.module.service.internal.FileSystemServiceProviderDiscoverer;
+import org.mule.runtime.module.service.internal.MuleServiceManager;
+import org.mule.runtime.module.service.internal.ReflectionServiceProviderResolutionHelper;
+import org.mule.runtime.module.service.internal.ReflectionServiceResolver;
+import org.mule.runtime.module.service.internal.ServiceClassLoaderFactory;
+import org.mule.runtime.module.service.internal.ServiceDescriptor;
 
 /**
  * Registry of mule artifact resources required to construct new artifacts.

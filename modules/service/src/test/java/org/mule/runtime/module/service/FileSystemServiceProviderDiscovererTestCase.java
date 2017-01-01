@@ -21,11 +21,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mule.runtime.container.api.MuleFoldersUtil.getServicesFolder;
 import static org.mule.runtime.core.api.config.MuleProperties.MULE_HOME_DIRECTORY_PROPERTY;
-import static org.mule.runtime.module.service.ServiceDescriptorFactory.SERVICE_PROVIDER_CLASS_NAME;
+import static org.mule.runtime.module.service.internal.ServiceDescriptorFactory.SERVICE_PROVIDER_CLASS_NAME;
 import org.mule.runtime.api.service.ServiceDefinition;
 import org.mule.runtime.api.service.ServiceProvider;
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoader;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
 import org.mule.runtime.module.service.builder.ServiceFileBuilder;
+import org.mule.runtime.module.service.internal.FileSystemServiceProviderDiscoverer;
+import org.mule.runtime.module.service.internal.ServiceClassLoaderFactory;
+import org.mule.runtime.module.service.internal.ServiceDescriptor;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 import org.mule.tck.junit4.rule.SystemPropertyTemporaryFolder;
 

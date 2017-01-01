@@ -5,7 +5,7 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
 import static java.lang.String.format;
 import static org.apache.commons.io.FilenameUtils.getBaseName;
@@ -21,6 +21,8 @@ import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoader;
 import org.mule.runtime.container.api.MuleFoldersUtil;
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoaderFactory;
+import org.mule.runtime.module.service.api.ServiceProviderDiscoverer;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
 
 import java.io.File;
 import java.io.IOException;

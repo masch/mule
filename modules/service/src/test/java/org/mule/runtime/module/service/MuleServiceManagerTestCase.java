@@ -17,6 +17,8 @@ import static org.mockito.Mockito.when;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.lifecycle.Startable;
 import org.mule.runtime.api.lifecycle.Stoppable;
+import org.mule.runtime.module.service.api.ServiceDiscoverer;
+import org.mule.runtime.module.service.internal.MuleServiceManager;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import java.lang.reflect.Proxy;

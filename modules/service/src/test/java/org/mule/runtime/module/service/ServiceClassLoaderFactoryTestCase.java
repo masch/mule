@@ -18,6 +18,8 @@ import static org.mule.runtime.module.artifact.classloader.ClassLoaderLookupStra
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoader;
 import org.mule.runtime.module.artifact.classloader.ClassLoaderLookupPolicy;
 import org.mule.runtime.module.artifact.classloader.MuleArtifactClassLoader;
+import org.mule.runtime.module.service.internal.ServiceClassLoaderFactory;
+import org.mule.runtime.module.service.internal.ServiceDescriptor;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import java.io.File;

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.lifecycle.Startable;
 import org.mule.runtime.api.lifecycle.Stoppable;
+import org.mule.runtime.module.service.internal.LifecycleFilterServiceProxy;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import org.junit.Rule;

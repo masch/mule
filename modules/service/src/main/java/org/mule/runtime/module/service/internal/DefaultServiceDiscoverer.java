@@ -5,12 +5,15 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
 
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.service.ServiceProvider;
+import org.mule.runtime.module.service.api.ServiceDiscoverer;
+import org.mule.runtime.module.service.api.ServiceProviderDiscoverer;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
 
 import java.util.List;
 

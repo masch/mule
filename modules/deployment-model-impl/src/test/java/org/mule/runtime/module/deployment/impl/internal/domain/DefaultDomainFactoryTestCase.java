@@ -19,7 +19,7 @@ import org.mule.runtime.deployment.model.api.domain.Domain;
 import org.mule.runtime.deployment.model.internal.domain.AbstractDomainTestCase;
 import org.mule.runtime.deployment.model.internal.domain.DomainClassLoaderFactory;
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoaderManager;
-import org.mule.runtime.module.service.ServiceRepository;
+import org.mule.runtime.module.service.api.ServiceRepository;
 
 import java.io.File;
 import java.io.FileNotFoundException;

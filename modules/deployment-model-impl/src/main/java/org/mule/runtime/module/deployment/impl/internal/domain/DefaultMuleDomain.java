@@ -32,7 +32,7 @@ import org.mule.runtime.module.artifact.classloader.ArtifactClassLoader;
 import org.mule.runtime.module.artifact.classloader.ClassLoaderRepository;
 import org.mule.runtime.module.deployment.impl.internal.artifact.ArtifactContextBuilder;
 import org.mule.runtime.module.reboot.MuleContainerBootstrapUtils;
-import org.mule.runtime.module.service.ServiceRepository;
+import org.mule.runtime.module.service.api.ServiceRepository;
 
 import java.io.File;
 import java.io.FileNotFoundException;

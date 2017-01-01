@@ -23,7 +23,7 @@ import org.mule.runtime.deployment.model.api.artifact.ArtifactContext;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplate;
 import org.mule.runtime.module.artifact.classloader.ClassLoaderRepository;
 import org.mule.runtime.module.deployment.impl.internal.artifact.ArtifactContextBuilder;
-import org.mule.runtime.module.service.ServiceRepository;
+import org.mule.runtime.module.service.api.ServiceRepository;
 
 import java.io.File;
 import java.util.ArrayList;

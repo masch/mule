@@ -5,17 +5,18 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
 import static java.util.Collections.unmodifiableList;
 import static org.mule.runtime.container.api.MuleFoldersUtil.getServicesFolder;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
-import static org.mule.runtime.module.service.LifecycleFilterServiceProxy.createServiceProxy;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.core.api.lifecycle.StartException;
 import org.mule.runtime.api.lifecycle.Startable;
 import org.mule.runtime.api.lifecycle.Stoppable;
+import org.mule.runtime.module.service.api.ServiceDiscoverer;
+import org.mule.runtime.module.service.api.ServiceManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,7 +66,7 @@ public class MuleServiceManager implements ServiceManager {
   private List<Service> wrapServices(List<Service> registeredServices) {
     final List<Service> result = new ArrayList<>(registeredServices.size());
     for (Service registeredService : registeredServices) {
-      final Service serviceProxy = createServiceProxy(registeredService);
+      final Service serviceProxy = LifecycleFilterServiceProxy.createServiceProxy(registeredService);
       result.add(serviceProxy);
     }
 

@@ -13,6 +13,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.service.ServiceProvider;
+import org.mule.runtime.module.service.api.ServiceProviderDiscoverer;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
+import org.mule.runtime.module.service.internal.DefaultServiceDiscoverer;
+import org.mule.runtime.module.service.internal.ServiceResolver;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import java.util.ArrayList;

@@ -15,8 +15,8 @@ import static org.mule.runtime.api.util.Preconditions.checkNotNull;
 import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.api.service.ServiceProvider;
 import org.mule.runtime.module.artifact.classloader.ArtifactClassLoader;
-import org.mule.runtime.module.service.ServiceProviderDiscoverer;
-import org.mule.runtime.module.service.ServiceResolutionError;
+import org.mule.runtime.module.service.api.ServiceProviderDiscoverer;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
 
 import java.util.LinkedList;
 import java.util.List;

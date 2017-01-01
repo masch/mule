@@ -7,7 +7,7 @@
 package org.mule.functional.services;
 
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
-import static org.mule.runtime.module.service.ServiceDescriptorFactory.SERVICE_PROVIDER_CLASS_NAME;
+import static org.mule.runtime.module.service.internal.ServiceDescriptorFactory.SERVICE_PROVIDER_CLASS_NAME;
 
 import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.core.api.scheduler.SchedulerService;

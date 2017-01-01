@@ -5,7 +5,7 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
 import static java.lang.String.format;
 import static org.reflections.ReflectionUtils.getAllFields;
@@ -13,6 +13,8 @@ import static org.reflections.ReflectionUtils.withAnnotation;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.service.ServiceDefinition;
 import org.mule.runtime.api.service.ServiceProvider;
+import org.mule.runtime.module.service.api.ServiceProviderResolutionHelper;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
 
 import java.lang.reflect.Field;
 import java.util.Collection;

@@ -16,8 +16,8 @@ import static org.mockito.Mockito.mock;
 import org.mule.runtime.api.service.Service;
 import org.mule.runtime.api.service.ServiceDefinition;
 import org.mule.runtime.api.service.ServiceProvider;
-import org.mule.runtime.module.service.ReflectionServiceProviderResolutionHelper;
-import org.mule.runtime.module.service.ServiceResolutionError;
+import org.mule.runtime.module.service.api.ServiceResolutionError;
+import org.mule.runtime.module.service.internal.ReflectionServiceProviderResolutionHelper;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 
 import java.util.ArrayList;

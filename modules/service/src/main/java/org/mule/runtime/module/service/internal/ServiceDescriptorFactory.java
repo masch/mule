@@ -5,9 +5,8 @@
  * LICENSE.txt file.
  */
 
-package org.mule.runtime.module.service;
+package org.mule.runtime.module.service.internal;
 
-import static org.mule.runtime.module.service.ServiceDescriptor.SERVICE_PROPERTIES;
 import org.mule.runtime.module.artifact.descriptor.ArtifactDescriptorCreateException;
 import org.mule.runtime.module.artifact.descriptor.ArtifactDescriptorFactory;
 
@@ -32,10 +31,10 @@ public class ServiceDescriptorFactory implements ArtifactDescriptorFactory<Servi
     final ServiceDescriptor descriptor = new ServiceDescriptor(serviceName);
     descriptor.setRootFolder(artifactFolder);
 
-    final File servicePropsFile = new File(artifactFolder, SERVICE_PROPERTIES);
+    final File servicePropsFile = new File(artifactFolder, ServiceDescriptor.SERVICE_PROPERTIES);
     if (!servicePropsFile.exists()) {
 
-      throw new ArtifactDescriptorCreateException("Service must contain a " + SERVICE_PROPERTIES + " file");
+      throw new ArtifactDescriptorCreateException("Service must contain a " + ServiceDescriptor.SERVICE_PROPERTIES + " file");
     }
 
     Properties props = new Properties();

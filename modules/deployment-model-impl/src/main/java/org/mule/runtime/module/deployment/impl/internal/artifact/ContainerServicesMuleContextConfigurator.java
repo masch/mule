@@ -13,7 +13,7 @@ import org.mule.runtime.api.service.Service;
 import org.mule.runtime.core.api.CustomizationService;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.deployment.model.api.artifact.MuleContextServiceConfigurator;
-import org.mule.runtime.module.service.ServiceRepository;
+import org.mule.runtime.module.service.api.ServiceRepository;
 
 /**
  * Configures available {@link Service} instances in an artifact's {@link MuleContext} in order to resolve injectable

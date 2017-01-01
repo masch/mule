@@ -10,7 +10,7 @@ package org.mule.functional.junit4;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
 import org.mule.runtime.core.api.CustomizationService;
 import org.mule.runtime.deployment.model.api.artifact.MuleContextServiceConfigurator;
-import org.mule.runtime.module.service.ServiceRepository;
+import org.mule.runtime.module.service.api.ServiceRepository;
 
 /**
  * Register services implementations.
