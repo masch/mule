@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.*;
 import static org.mule.runtime.core.processor.strategy.AbstractSchedulingProcessingStrategy.TRANSACTIONAL_ERROR_MESSAGE;
+import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
@@ -74,7 +75,7 @@ public class ReactorProcessingStrategyTestCase extends AbstractProcessingStrateg
 
   @Test
   @Description("Regardless of processor type, when the ReactorProcessingStrategy is configured, the pipeline is executed "
-               + "synchronously in a single cpu light thread.")
+      + "synchronously in a single cpu light thread.")
   public void singleBlockingConcurrent() throws Exception {
     expectedException.expect(MessagingException.class);
     expectedException.expect(hasCause(hasCause(instanceOf(TimeoutException.class))));
@@ -130,7 +131,7 @@ public class ReactorProcessingStrategyTestCase extends AbstractProcessingStrateg
 
     TransactionCoordination.getInstance().bindTransaction(new TestTransaction(muleContext));
 
-    expectedException.expect(DefaultMuleException.class);
+    expectedException.expect(MuleRuntimeException.class);
     expectedException.expectMessage(equalTo(TRANSACTIONAL_ERROR_MESSAGE));
     process(flow, testEvent());
   }

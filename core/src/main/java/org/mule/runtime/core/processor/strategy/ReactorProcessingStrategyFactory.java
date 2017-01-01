@@ -52,7 +52,7 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
   public ProcessingStrategy create(MuleContext muleContext, String schedulersNamePrefix) {
     // TODO MULE-11132 Use cpuLight scheduler with single-thread affinity.
     return new ReactorProcessingStrategy(() -> muleContext.getSchedulerService()
-        .customScheduler(config().withMaxConcurrentTasks(1).withName(schedulersNamePrefix + ".event-loop"), DEFAULT_QUEUE_SIZE),
+        .customScheduler(config().withMaxConcurrentTasks(2).withName(schedulersNamePrefix + ".event-loop"), DEFAULT_QUEUE_SIZE),
                                          scheduler -> scheduler.stop(muleContext.getConfiguration().getShutdownTimeout(),
                                                                      MILLISECONDS),
                                          muleContext);
@@ -72,9 +72,9 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
 
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
       TopicProcessor<Event> processor = TopicProcessor.share(cpuLightScheduler, false);
-      Cancellation cancellation = processor.transform(function).retry().subscribe();
+      Cancellation cancellation = processor.transform(onPipeline(flowConstruct, function)).retry().subscribe();
       BlockingSink blockingSink = processor.connectSink();
-      return new ReactorSink(blockingSink, flowConstruct, cancellation);
+      return new ReactorSink(blockingSink, flowConstruct, cancellation, assertCanProcess());
     }
 
     @Override
@@ -94,6 +94,7 @@ public class ReactorProcessingStrategyFactory implements ProcessingStrategyFacto
                                                                    Function<Publisher<Event>, Publisher<Event>> pipelineFunction,
                                                                    MessagingExceptionHandler messagingExceptionHandler) {
       return publisher -> from(publisher)
+          .doOnNext(assertCanProcess())
           .publishOn(fromExecutorService(cpuLightScheduler))
           .transform(pipelineFunction);
     }

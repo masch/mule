@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.mule.runtime.core.MessageExchangePattern.ONE_WAY;
+import static reactor.core.publisher.Flux.just;
 
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.i18n.I18nMessage;
@@ -39,6 +40,7 @@ import org.mule.runtime.core.api.source.MessageSource;
 import org.mule.runtime.core.processor.ResponseMessageProcessorAdapter;
 import org.mule.runtime.core.processor.chain.DynamicMessageProcessorContainer;
 import org.mule.runtime.core.processor.strategy.LegacyAsynchronousProcessingStrategyFactory;
+import org.mule.runtime.core.processor.strategy.StreamPerRequestProcesingStrategyFactory;
 import org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory;
 import org.mule.runtime.core.transformer.simple.StringAppendTransformer;
 import org.mule.runtime.core.util.NotificationUtils.FlowMap;
@@ -51,6 +53,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 public class FlowTestCase extends AbstractFlowConstructTestCase {
 
@@ -205,6 +208,7 @@ public class FlowTestCase extends AbstractFlowConstructTestCase {
 
   @Test
   public void testDynamicPipeline() throws Exception {
+    flow.setProcessingStrategyFactory(new StreamPerRequestProcesingStrategyFactory());
     flow.initialise();
     flow.start();
 
@@ -218,11 +222,11 @@ public class FlowTestCase extends AbstractFlowConstructTestCase {
 
     flow.dynamicPipeline(pipelineId).injectBefore(new StringAppendTransformer("2")).injectAfter(new StringAppendTransformer("3"))
         .resetAndUpdate();
-    response = directInboundMessageSource.process(testEvent());
+    response = directInboundMessageSource.process(eventBuilder().message(InternalMessage.of(TEST_PAYLOAD)).build());
     assertEquals(TEST_PAYLOAD + "2abcdef3", response.getMessageAsString(muleContext));
 
     flow.dynamicPipeline(pipelineId).reset();
-    response = directInboundMessageSource.process(testEvent());
+    response = directInboundMessageSource.process(eventBuilder().message(InternalMessage.of(TEST_PAYLOAD)).build());
     assertEquals(TEST_PAYLOAD + "abcdef", response.getMessageAsString(muleContext));
   }
 
@@ -238,6 +242,10 @@ public class FlowTestCase extends AbstractFlowConstructTestCase {
 
     Processor mockMessageProcessor =
         mock(Processor.class, withSettings().extraInterfaces(Startable.class, Stoppable.class));
+    when(mockMessageProcessor.apply(any(Publisher.class))).then(invocation -> {
+      Object[] args = invocation.getArguments();
+      return args[0];
+    });
     flow.getMessageProcessors().add(mockMessageProcessor);
 
     flow.initialise();

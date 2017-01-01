@@ -6,6 +6,7 @@
  */
 package org.mule.runtime.core.processor.strategy;
 
+import static reactor.util.concurrent.QueueSupplier.*;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.construct.FlowConstruct;
@@ -13,6 +14,7 @@ import org.mule.runtime.core.api.processor.Sink;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
@@ -21,6 +23,7 @@ import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.TopicProcessor;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * This processing strategy processes all message processors in the calling thread.
@@ -36,9 +39,15 @@ public class SynchronousProcessingStrategyFactory implements ProcessingStrategyF
 
     @Override
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
-      FluxProcessor<Event, Event> processor = EmitterProcessor.<Event>create(false).serialize();
+      FluxProcessor<Event, Event> processor = EmitterProcessor.<Event>create(1, false).serialize();
       Cancellation cancellation = processor.transform(function).retry().subscribe();
-      return new ReactorSink(processor.connectSink(), flowConstruct, cancellation);
+      return new ReactorSink(processor.connectSink(), flowConstruct, cancellation, assertCanProcess());
+    }
+
+    @Override
+    protected Consumer<Event> assertCanProcess() {
+      return event -> {
+      };
     }
   };
 

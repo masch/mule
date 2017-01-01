@@ -53,7 +53,7 @@ public class WorkQueueProcessingStrategyFactory implements ProcessingStrategyFac
   @Override
   public ProcessingStrategy create(MuleContext muleContext, String schedulersNamePrefix) {
     return new WorkQueueProcessingStrategy(() -> muleContext.getSchedulerService()
-        .ioScheduler(config().withMaxConcurrentTasks(maxThreads).withName(schedulersNamePrefix)),
+        .ioScheduler(config().withName(schedulersNamePrefix)),
                                            scheduler -> scheduler.stop(muleContext.getConfiguration().getShutdownTimeout(),
                                                                        MILLISECONDS),
                                            maxThreads,
@@ -76,12 +76,12 @@ public class WorkQueueProcessingStrategyFactory implements ProcessingStrategyFac
     public Sink getSink(FlowConstruct flowConstruct, Function<Publisher<Event>, Publisher<Event>> function) {
       WorkQueueProcessor<Event> processor = WorkQueueProcessor.share(scheduler, false);
       List<Cancellation> cancellationList = new ArrayList<>();
-      for (int i = 0; i <= maxThreads; i++) {
+      for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
         cancellationList.add(processor.transform(function).retry().subscribe());
       }
       BlockingSink blockingSink = processor.connectSink();
       return new ReactorSink(blockingSink, flowConstruct,
-                             () -> cancellationList.stream().forEach(cancellation -> cancellation.dispose()));
+                             () -> cancellationList.stream().forEach(cancellation -> cancellation.dispose()), assertCanProcess());
     }
 
     @Override

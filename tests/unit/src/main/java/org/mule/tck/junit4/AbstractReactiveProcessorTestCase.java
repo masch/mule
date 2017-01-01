@@ -110,8 +110,11 @@ public abstract class AbstractReactiveProcessorTestCase extends AbstractMuleCont
           throw (Exception) unwrap(exception);
         }
       case FLUX:
-        Flux.just(event).transform(flow).doOnNext(response -> response.getContext().success(response))
-            .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me)).subscribe();
+        Flux.just(event)
+            .transform(flow)
+            .doOnNext(response -> response.getContext().success(response))
+            .doOnError(MessagingException.class, me -> me.getEvent().getContext().error(me))
+            .subscribe();
         try {
           return from(event.getContext()).block();
         } catch (Throwable exception) {

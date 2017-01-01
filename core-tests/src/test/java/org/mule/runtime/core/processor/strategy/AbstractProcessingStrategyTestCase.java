@@ -52,8 +52,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleContextTestCase
-{
+public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleContextTestCase {
 
   protected static int LATCH_TIMEOUT_MS = 200;
   protected static final String CPU_LIGHT = "cpuLight";
@@ -116,7 +115,8 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleCon
   protected abstract ProcessingStrategy createProcessingStrategy(MuleContext muleContext, String schedulersNamePrefix);
 
   @After
-  public void after() {
+  public void after() throws MuleException {
+    flow.stop();
     cpuLight.shutdownNow();
     blocking.shutdownNow();
     cpuIntensive.shutdownNow();
@@ -228,8 +228,7 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleCon
   @Test
   public abstract void tx() throws Exception;
 
-  protected void assertThreads(int test, int cpuLite, int io, int cpuIntensive)
-  {
+  protected void assertThreads(int test, int cpuLite, int io, int cpuIntensive) {
     assertThat(threads.size(), equalTo(test + cpuLite + io + cpuIntensive));
     assertThat(threads.stream().filter(name -> name.startsWith(CPU_LIGHT)).count(), equalTo((long) cpuLite));
     assertThat(threads.stream().filter(name -> name.startsWith(IO)).count(), equalTo((long) io));
@@ -253,7 +252,7 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleCon
       if (firstCalled.compareAndSet(false, true)) {
         firstCalledLatch.release();
         try {
-          if(!latch.await(LATCH_TIMEOUT_MS, MILLISECONDS)){
+          if (!latch.await(LATCH_TIMEOUT_MS, MILLISECONDS)) {
             throw new DefaultMuleException(new TimeoutException(""));
           }
         } catch (InterruptedException e) {
@@ -340,8 +339,7 @@ public abstract class AbstractProcessingStrategyTestCase extends AbstractMuleCon
   }
 
   public enum Mode {
-    BLOCKING,
-    ASYNC,
+    BLOCKING, ASYNC,
   }
 
 

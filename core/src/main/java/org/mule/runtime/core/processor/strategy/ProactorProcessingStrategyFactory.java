@@ -12,6 +12,7 @@ import static org.mule.runtime.core.api.processor.ReactiveProcessor.ProcessingTy
 import static org.mule.runtime.core.api.processor.ReactiveProcessor.ProcessingType.CPU_LITE;
 import static org.mule.runtime.core.api.scheduler.SchedulerConfig.config;
 import static reactor.core.publisher.Flux.from;
+import static reactor.core.publisher.Flux.just;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
 import org.mule.runtime.api.exception.MuleException;
@@ -20,12 +21,19 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
+import org.mule.runtime.core.processor.strategy.ReactorProcessingStrategyFactory.ReactorProcessingStrategy;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Creates {@link ProactorProcessingStrategyFactory} instances. This processing strategy dipatches incoming messages to
@@ -39,14 +47,15 @@ import org.reactivestreams.Publisher;
  *
  * @since 4.0
  */
-public class ProactorProcessingStrategyFactory extends MultiReactorProcessingStrategyFactory {
+public class ProactorProcessingStrategyFactory extends ReactorProcessingStrategyFactory {
 
   @Override
   public ProcessingStrategy create(MuleContext muleContext, String schedulersNamePrefix) {
     return new ProactorProcessingStrategy(() -> muleContext.getSchedulerService()
         .cpuLightScheduler(config().withName(schedulersNamePrefix + "." + CPU_LITE.name())),
                                           () -> muleContext.getSchedulerService()
-                                              .ioScheduler(config().withName(schedulersNamePrefix + "." + BLOCKING.name())),
+                                              .customScheduler(config().withMaxConcurrentTasks(20)
+                                                  .withName(schedulersNamePrefix + "." + BLOCKING.name())),
                                           () -> muleContext.getSchedulerService()
                                               .cpuIntensiveScheduler(config()
                                                   .withName(schedulersNamePrefix + "." + CPU_INTENSIVE.name())),
@@ -55,7 +64,7 @@ public class ProactorProcessingStrategyFactory extends MultiReactorProcessingStr
                                           muleContext);
   }
 
-  static class ProactorProcessingStrategy extends MultiReactorProcessingStrategy {
+  static class ProactorProcessingStrategy extends ReactorProcessingStrategy {
 
     private Supplier<Scheduler> blockingSchedulerSupplier;
     private Supplier<Scheduler> cpuIntensiveSchedulerSupplier;
@@ -105,9 +114,7 @@ public class ProactorProcessingStrategyFactory extends MultiReactorProcessingStr
     private Function<Publisher<Event>, Publisher<Event>> proactor(Function<Publisher<Event>, Publisher<Event>> processorFunction,
                                                                   Scheduler scheduler) {
       return publisher -> from(publisher)
-          .publishOn(fromExecutorService(getExecutorService(scheduler)))
-          .transform(processorFunction)
-          .publishOn(fromExecutorService(getExecutorService(cpuLightScheduler)));
+          .flatMap(event -> just(event).transform(processorFunction).subscribeOn(fromExecutorService(scheduler)), 20);
     }
 
   }

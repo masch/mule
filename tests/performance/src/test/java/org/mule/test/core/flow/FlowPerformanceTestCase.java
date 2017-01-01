@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import jmh.MonoProcesingStrategyFactory;
+import org.mule.runtime.core.processor.strategy.StreamPerRequestProcesingStrategyFactory;
 import org.databene.contiperf.PerfTest;
 import org.databene.contiperf.junit.ContiPerfRule;
 import org.junit.After;
@@ -80,7 +80,7 @@ public class FlowPerformanceTestCase extends AbstractMuleContextTestCase {
         {new ReactorProcessingStrategyFactory(), singletonList(liteProcessor)},
         {new ProactorProcessingStrategyFactory(), singletonList(liteProcessor)},
         {new WorkQueueProcessingStrategyFactory(), singletonList(liteProcessor)},
-        {new MonoProcesingStrategyFactory(), singletonList(liteProcessor)}
+        {new StreamPerRequestProcesingStrategyFactory(), singletonList(liteProcessor)}
     });
   }
 

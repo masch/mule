@@ -22,6 +22,7 @@ import org.mule.runtime.core.api.Injector;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.construct.Flow;
 import org.mule.runtime.core.exception.MessagingException;
+import org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory;
 import org.mule.runtime.core.util.rx.Exceptions.EventDroppedException;
 
 import java.util.function.Function;
@@ -58,6 +59,7 @@ public final class MuleTestUtils {
 
   public static Flow getTestFlow(MuleContext context) throws MuleException {
     final Flow flow = new Flow(APPLE_FLOW, context);
+    flow.setProcessingStrategyFactory(new SynchronousProcessingStrategyFactory());
     if (context.getRegistry() != null) {
       context.getRegistry().registerFlowConstruct(flow);
     }

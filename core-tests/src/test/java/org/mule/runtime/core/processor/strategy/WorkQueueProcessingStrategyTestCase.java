@@ -11,6 +11,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mule.runtime.core.processor.strategy.AbstractSchedulingProcessingStrategy.TRANSACTIONAL_ERROR_MESSAGE;
 
+import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
@@ -70,7 +71,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
 
   @Override
   @Description("Regardless of processor type, when the WorkQueueProcessingStrategy is configured, the pipeline is executed "
-               + "synchronously in a single IO thead.")
+      + "synchronously in a single IO thead.")
   public void singleBlockingConcurrent() throws Exception {
     super.singleBlockingConcurrent();
     assertThreads(0, 0, 2, 0);
@@ -125,7 +126,7 @@ public class WorkQueueProcessingStrategyTestCase extends AbstractProcessingStrat
 
     TransactionCoordination.getInstance().bindTransaction(new TestTransaction(muleContext));
 
-    expectedException.expect(DefaultMuleException.class);
+    expectedException.expect(MuleRuntimeException.class);
     expectedException.expectMessage(equalTo(TRANSACTIONAL_ERROR_MESSAGE));
     process(flow, testEvent());
   }

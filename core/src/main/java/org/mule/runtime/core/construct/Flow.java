@@ -90,10 +90,13 @@ public class Flow extends AbstractPipeline implements Processor, AsyncProcessor,
   }
 
   @Override
-  public Publisher<Event> processAsync(Event event)
-  {
-    sink.accept(event);
-    return event.getContext();
+  public Publisher<Event> processAsync(Event event) {
+    if (useBlockingCodePath()) {
+      return Mono.fromCallable(() -> process(event));
+    } else {
+      sink.accept(event);
+      return event.getContext();
+    }
   }
 
   @Override
@@ -104,7 +107,10 @@ public class Flow extends AbstractPipeline implements Processor, AsyncProcessor,
     } else {
       return from(publisher).concatMap(event -> just(event)
           .map(request -> createMuleEventForCurrentFlow(request, request.getReplyToDestination(), request.getReplyToHandler()))
-          .concatMap(request -> processAsync(request))
+          .transform(processingStrategy.onPipeline(this, pipeline))
+          .onErrorResumeWith(MessagingException.class, getExceptionListener())
+          .doOnError(UNEXPECTED_EXCEPTION_PREDICATE,
+                     throwable -> LOGGER.error("Unhandled exception in async processing " + throwable))
           .map(response -> createReturnEventForParentFlowConstruct(response, event)));
     }
   }

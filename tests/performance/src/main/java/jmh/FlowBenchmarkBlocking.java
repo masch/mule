@@ -6,6 +6,7 @@
  */
 package jmh;
 
+import static java.util.Collections.singletonList;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.config.builders.BasicRuntimeServicesConfigurationBuilder;
 import org.mule.runtime.core.DefaultEventContext;
@@ -14,6 +15,9 @@ import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.config.ConfigurationBuilder;
 import org.mule.runtime.core.api.context.MuleContextFactory;
 import org.mule.runtime.core.api.message.InternalMessage;
+import org.mule.runtime.core.api.processor.Processor;
+import org.mule.runtime.core.api.processor.ReactiveProcessor;
+import org.mule.runtime.core.api.processor.ReactiveProcessor.ProcessingType;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategyFactory;
 import org.mule.runtime.core.config.builders.DefaultsConfigurationBuilder;
 import org.mule.runtime.core.construct.Flow;
@@ -39,8 +43,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
-import reactor.core.publisher.Mono;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  *
@@ -49,10 +54,10 @@ import reactor.core.publisher.Mono;
 @Fork(1)
 @Threads(1)
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 10)
 @Measurement(iterations = 10)
-public class FlowBenchmark {
+public class FlowBenchmarkBlocking {
 
   public static final String TEST_PAYLOAD = "test";
   public static final String TEST_CONNECTOR = "test";
@@ -61,11 +66,15 @@ public class FlowBenchmark {
   private Flow flow;
   private TriggerableMessageSource source;
 
-  @Param({"org.mule.runtime.core.processor.strategy.LegacySynchronousProcessingStrategyFactory",
-      "org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory",
-      "org.mule.runtime.core.processor.strategy.ReactorProcessingStrategyFactory",
-      "org.mule.runtime.core.processor.strategy.MultiReactorProcessingStrategyFactory",
-      "org.mule.runtime.core.processor.strategy.MonoProcesingStrategyFactory"})
+  @Param({
+      //"org.mule.runtime.core.processor.strategy.LegacySynchronousProcessingStrategyFactory",
+      //"org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory",
+      //"org.mule.runtime.core.processor.strategy.ReactorProcessingStrategyFactory",
+      //"org.mule.runtime.core.processor.strategy.MultiReactorProcessingStrategyFactory",
+      "org.mule.runtime.core.processor.strategy.DefaultFlowProcessingStrategyFactory",
+      //"org.mule.runtime.core.processor.strategy.WorkQueueProcessingStrategyFactory",
+      //"org.mule.runtime.core.processor.strategy.MonoProcesingStrategyFactory"
+  })
   public String processingStrategyFactory;
 
 
@@ -80,7 +89,23 @@ public class FlowBenchmark {
 
     source = new TriggerableMessageSource();
     flow = new Flow("flow", muleContext);
-    flow.setMessageProcessors(Collections.singletonList(event -> event));
+    flow.setMessageProcessors(singletonList(new Processor() {
+
+      @Override
+      public Event process(Event event) throws MuleException {
+        try {
+          Thread.sleep(5);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        return event;
+      }
+
+      @Override
+      public ProcessingType getProcessingType() {
+        return ProcessingType.BLOCKING;
+      }
+    }));
     flow.setMessageSource(source);
     flow.setProcessingStrategyFactory((ProcessingStrategyFactory) Class.forName(processingStrategyFactory).newInstance());
     muleContext.getRegistry().registerFlowConstruct(flow);
@@ -104,56 +129,56 @@ public class FlowBenchmark {
   //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
   //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
   //}
-  //
-  //@Benchmark
-  //@Threads(4)
-  //public Event processSource4Threads() throws MuleException {
-  //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
-  //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
-  //}
 
   @Benchmark
-  @Threads(8)
-  public Event processSource8Threads() throws MuleException {
+  @Threads(4)
+  public Event processSource4Threads() throws MuleException {
     return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
         .message(InternalMessage.of(TEST_PAYLOAD)).build());
   }
 
   //@Benchmark
-  //@Threads(16)
-  //public Event processSource16Threads() throws MuleException {
+  //@Threads(8)
+  //public Event processSource8Threads() throws MuleException {
   //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
   //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
   //}
+
+  @Benchmark
+  @Threads(16)
+  public Event processSource16Threads() throws MuleException {
+    return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
+        .message(InternalMessage.of(TEST_PAYLOAD)).build());
+  }
+
+  // @Benchmark
+  // @Threads(32)
+  // public Event processSource32Threads() throws MuleException {
+  // return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
+  // .message(InternalMessage.of(TEST_PAYLOAD)).build());
+  // }
   //
-  //@Benchmark
-  //@Threads(32)
-  //public Event processSource32Threads() throws MuleException {
-  //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
-  //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
-  //}
-  //
-  //@Benchmark
-  //@Threads(64)
-  //public Event processSource64Threads() throws MuleException {
-  //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
-  //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
-  //}
+  // @Benchmark
+  // @Threads(64)
+  // public Event processSource64Threads() throws MuleException {
+  // return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
+  // .message(InternalMessage.of(TEST_PAYLOAD)).build());
+  // }
   //
   //
-  //@Benchmark
-  //@Threads(128)
-  //public Event processSource128Threads() throws MuleException {
-  //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
-  //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
-  //}
+  // @Benchmark
+  // @Threads(128)
+  // public Event processSource128Threads() throws MuleException {
+  // return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
+  // .message(InternalMessage.of(TEST_PAYLOAD)).build());
+  // }
   //
   //
-  //@Benchmark
-  //@Threads(256)
-  //public Event processSource256Threads() throws MuleException {
-  //  return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
-  //      .message(InternalMessage.of(TEST_PAYLOAD)).build());
-  //}
+  // @Benchmark
+  // @Threads(256)
+  // public Event processSource256Threads() throws MuleException {
+  // return source.trigger(Event.builder(DefaultEventContext.create(flow, TEST_CONNECTOR))
+  // .message(InternalMessage.of(TEST_PAYLOAD)).build());
+  // }
 
 }

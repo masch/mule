@@ -7,12 +7,9 @@
 package org.mule.runtime.core.processor.strategy;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.mule.runtime.core.processor.strategy.SynchronousProcessingStrategyFactory.SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE;
-
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.exception.MessagingException;
@@ -27,15 +24,15 @@ import ru.yandex.qatools.allure.annotations.Stories;
 
 @Features("Processing Strategies")
 @Stories("Synchronous Processing Strategy")
-public class SynchronousProcessingStrategyTestCase extends AbstractProcessingStrategyTestCase {
+public class StreamPerRequestProcessingStrategyTestCase extends AbstractProcessingStrategyTestCase {
 
-  public SynchronousProcessingStrategyTestCase(Mode mode) {
+  public StreamPerRequestProcessingStrategyTestCase(Mode mode) {
     super(mode);
   }
 
   @Override
   protected ProcessingStrategy createProcessingStrategy(MuleContext muleContext, String schedulersNamePrefix) {
-    return SYNCHRONOUS_PROCESSING_STRATEGY_INSTANCE;
+    return new StreamPerRequestProcesingStrategyFactory().create(muleContext, "");
   }
 
   @Override
@@ -50,9 +47,8 @@ public class SynchronousProcessingStrategyTestCase extends AbstractProcessingStr
   @Description("Regardless of processor type, when the SynchronousProcessingStrategy is configured, the pipeline is executed "
       + "synchronously in a caller thread.")
   public void singleCpuLightConcurrent() throws Exception {
-    expectedException.expect(MessagingException.class);
-    expectedException.expect(hasCause(hasCause(instanceOf(TimeoutException.class))));
     super.singleCpuLightConcurrent();
+    assertThreads(2, 0, 0, 0);
   }
 
   @Override
@@ -73,9 +69,8 @@ public class SynchronousProcessingStrategyTestCase extends AbstractProcessingStr
 
   @Override
   public void singleBlockingConcurrent() throws Exception {
-    expectedException.expect(MessagingException.class);
-    expectedException.expect(hasCause(hasCause(instanceOf(TimeoutException.class))));
     super.singleBlockingConcurrent();
+    assertThreads(2, 0, 0, 0);
   }
 
   @Override

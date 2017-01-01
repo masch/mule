@@ -9,17 +9,23 @@ package org.mule.runtime.core.processor.strategy;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.mule.runtime.core.processor.strategy.AbstractSchedulingProcessingStrategy.TRANSACTIONAL_ERROR_MESSAGE;
 
+import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.core.api.DefaultMuleException;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
+import org.mule.runtime.core.exception.MessagingException;
 import org.mule.runtime.core.processor.strategy.ProactorProcessingStrategyFactory.ProactorProcessingStrategy;
 import org.mule.runtime.core.transaction.TransactionCoordination;
 import org.mule.tck.testmodels.mule.TestTransaction;
+
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 import ru.yandex.qatools.allure.annotations.Description;
@@ -52,8 +58,9 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
   @Description("When ProactorProcessingStrategy is configured, two concurrent requests may be processed by two different "
       + " cpu light threads. MULE-11132 is needed for true reactor behaviour.")
   public void singleCpuLightConcurrent() throws Exception {
+    expectedException.expect(MessagingException.class);
+    expectedException.expect(hasCause(hasCause(instanceOf(TimeoutException.class))));
     super.singleCpuLightConcurrent();
-    assertThreads(0, 2, 0, 0);
   }
 
   @Override
@@ -146,7 +153,7 @@ public class ProactorProcessingStrategyTestCase extends AbstractProcessingStrate
 
     TransactionCoordination.getInstance().bindTransaction(new TestTransaction(muleContext));
 
-    expectedException.expect(DefaultMuleException.class);
+    expectedException.expect(MuleRuntimeException.class);
     expectedException.expectMessage(equalTo(TRANSACTIONAL_ERROR_MESSAGE));
     process(flow, testEvent());
   }

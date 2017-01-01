@@ -129,7 +129,8 @@ public class DefaultMessageProcessorChainTestCase extends AbstractReactiveProces
         {new WorkQueueProcessingStrategyFactory(), FLUX},
         {new LegacyDefaultFlowProcessingStrategyFactory(), FLUX},
         {new LegacyNonBlockingProcessingStrategyFactory(), FLUX},
-        {new LegacyAsynchronousProcessingStrategyFactory(), FLUX}});
+        {new LegacyAsynchronousProcessingStrategyFactory(), FLUX}
+    });
   }
 
   private Flow flow;
@@ -162,9 +163,9 @@ public class DefaultMessageProcessorChainTestCase extends AbstractReactiveProces
 
   @After
   public void after() throws MuleException {
-    stopIfNeeded(muleContext.getSchedulerService());
     flow.stop();
     flow.dispose();
+    stopIfNeeded(muleContext.getSchedulerService());
   }
 
   @Test
